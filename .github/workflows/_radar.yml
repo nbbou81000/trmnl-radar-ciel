@@ -1,0 +1,57 @@
+# Étapes communes, appelées par les trois autres workflows. Ne pas lancer directement.
+name: _radar (commun)
+
+on:
+  workflow_call:
+    inputs:
+      action:
+        type: string
+        default: actualiser
+      vol:
+        type: string
+        default: ""
+      jusqu_au:
+        type: string
+        default: ""
+
+permissions:
+  contents: write
+
+jobs:
+  radar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Récupérer les données précédentes (branche data)
+        run: |
+          mkdir -p data
+          if git fetch --depth=1 origin data:refs/remotes/origin/data 2>/dev/null; then
+            git archive refs/remotes/origin/data | tar -x -C data
+          else
+            echo "Première exécution : pas encore de branche data."
+          fi
+
+      - name: Interroger le ciel
+        env:
+          DATA_DIR: data
+          ACTION: ${{ inputs.action }}
+          TRACK_QUERY: ${{ inputs.vol }}
+          TRACK_UNTIL: ${{ inputs.jusqu_au }}
+        run: node scripts/radar.mjs | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Publier sur la branche data
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cd data
+          git init -q
+          git checkout -q -b data
+          git add -A
+          git -c user.name="radar-bot" -c user.email="radar-bot@users.noreply.github.com" commit -qm "Ciel à $(date -u +%H:%M) UTC"
+          git push -q -f "https://x-access-token:${TOKEN}@github.com/${GITHUB_REPOSITORY}.git" data

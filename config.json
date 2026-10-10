@@ -1,0 +1,10 @@
+{
+  "lieu": "Cagnac-les-Mines",
+  "lieu_court": "Cagnac",
+  "latitude": 43.988,
+  "longitude": 2.170,
+  "rayon_km": 30,
+  "vols_max": 5,
+  "inclure_au_sol": false,
+  "fuseau": "Europe/Paris"
+}

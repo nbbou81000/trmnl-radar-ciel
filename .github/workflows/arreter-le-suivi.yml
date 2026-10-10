@@ -1,0 +1,17 @@
+name: Arrêter le suivi
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: radar
+  cancel-in-progress: false
+
+jobs:
+  radar:
+    uses: ./.github/workflows/_radar.yml
+    with:
+      action: arreter

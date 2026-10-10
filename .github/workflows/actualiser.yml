@@ -1,0 +1,21 @@
+name: Actualiser le radar
+
+# Lancé toutes les 5 minutes par cron-job.org (voir le README),
+# avec le planificateur GitHub en secours toutes les 15 minutes.
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "*/15 * * * *"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: radar
+  cancel-in-progress: false
+
+jobs:
+  radar:
+    uses: ./.github/workflows/_radar.yml
+    with:
+      action: actualiser

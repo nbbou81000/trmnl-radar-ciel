@@ -1,0 +1,171 @@
+{%- comment -%} Radar du ciel — vue half_horizontal (généré, ne pas modifier : voir trmnl/src) {%- endcomment -%}
+{%- assign n = 2 -%}{%- assign narrow = false -%}{%- assign short = true -%}
+{%- assign st = trmnl.plugin_settings.custom_fields_values.style | default: "classique" | downcase -%}
+{%- assign shown = flights.size | default: 0 -%}
+{%- if shown > n -%}{%- assign shown = n -%}{%- endif -%}
+{%- assign blanks = n | minus: shown -%}
+{%- assign t = track -%}
+{%- assign total_n = total | default: 0 -%}
+{%- capture title_line -%}{% if mode == "suivi" %}Suivi {{ t.flight }}{% else %}{{ place_short }} · {{ total_n }} avion{% if total_n > 1 %}s{% endif %} à {{ radius_km }} km{% endif %} · {{ updated_txt }}{% if stale %} (ancien){% endif %}{%- endcapture -%}
+
+{%- if st == "led" -%}
+{%- comment -%} ===================== STYLE LED ===================== {%- endcomment -%}
+<div class="layout">
+  <div class="rc rc--led rc--n{{ n }}{% if narrow %} rc--narrow{% endif %}{% if short %} rc--short{% endif %}">
+  {%- if mode == "suivi" -%}
+    <div class="led-head"><span>{{ t.flight }}</span><span>{{ t.status_txt }}</span></div>
+    <div class="lt-route">
+      <div><div class="lt-code">{{ t.from | default: "---" }}</div><div class="lt-city">{{ t.from_city }}</div></div>
+      <div class="lt-mid">&gt;&gt;</div>
+      <div class="lt-to"><div class="lt-code">{{ t.to | default: "---" }}</div><div class="lt-city">{{ t.to_city }}</div></div>
+    </div>
+    {%- if t.progress_pct != nil -%}
+    <div class="lt-bar">{% for i in (1..30) %}<div class="lt-dot{% if i <= t.progress_steps %} lt-dot--on{% endif %}"></div>{% endfor %}</div>
+    <div class="lt-info">{{ t.progress_pct }}%{% if t.remaining_km and t.remaining_km > 0 %} · reste {{ t.remaining_txt }} km{% endif %}{% if t.eta_txt != "" %} · arr. {{ t.eta_txt }}{% endif %}</div>
+    {%- else -%}
+    <div class="lt-info lt-info--alone">{% if t.status == "attente" %}en attente du transpondeur{% else %}route inconnue{% endif %}</div>
+    {%- endif -%}
+    <div class="lt-metrics">
+      <div><span class="lt-k">alt m</span><span class="lt-v">{{ t.alt_txt }}</span></div>
+      <div><span class="lt-k">km/h</span><span class="lt-v">{{ t.speed_txt }}</span></div>
+      <div><span class="lt-k">cap</span><span class="lt-v">{{ t.track_txt }}</span></div>
+      <div><span class="lt-k">vr m/s</span><span class="lt-v">{{ t.vr_txt }}</span></div>
+    </div>
+    <div class="led-foot"><span>{{ t.type | default: t.airline }}</span><span>{% if t.last_seen_txt != "" %}vu {{ t.last_seen_txt }}{% else %}{{ updated_txt }}{% endif %}</span></div>
+  {%- else -%}
+    <div class="led-head"><span>ciel de {{ place_short }}</span><span>{{ updated_txt }}</span></div>
+    <div class="led-body">
+    {%- if shown == 0 -%}
+      <div class="led-empty">ciel calme<br>rien a {{ radius_km }} km</div>
+    {%- else -%}
+      {%- for f in flights limit: n -%}
+      <div class="led-row">
+        <div class="led-main"><span>{{ f.flight }}</span><span>{% if f.has_route %}{{ f.from }}&gt;{{ f.to }}{% else %}---&gt;---{% endif %}</span><span class="led-type">{{ f.type_code }}</span></div>
+        <div class="led-sub">{% if short or narrow %}{{ f.alt_txt }}m {{ f.speed_txt }}kmh{% unless narrow %} cap {{ f.track_txt }}{% endunless %}{% else %}alt {{ f.alt_txt }}m &nbsp;{{ f.speed_txt }}kmh &nbsp;cap {{ f.track_txt }} &nbsp;vr {{ f.vr_txt }} &nbsp;{{ f.dist_km }}km{% endif %}</div>
+      </div>
+      {%- endfor -%}
+    {%- endif -%}
+    </div>
+    <div class="led-foot"><span>adsb.lol</span><span>{{ total_n }} vol{% if total_n > 1 %}s{% endif %} · {{ radius_km }}km</span></div>
+  {%- endif -%}
+  </div>
+</div>
+
+{%- elsif st == "flip-flap" -%}
+{%- comment -%} ===================== STYLE FLIP-FLAP ===================== {%- endcomment -%}
+<div class="layout">
+  {%- if mode == "suivi" -%}
+  {%- assign tn = 6 -%}{%- if short -%}{%- assign tn = 3 -%}{%- endif -%}
+  <div class="rc rc--flap rc--track rc--n{{ tn }}">
+    <div class="fl-head"><span>suivi</span><span>{{ updated_txt }}</span></div>
+    <div class="fl-body">
+      {%- for line in t.flap limit: tn -%}
+      <div class="fl-row">{%- assign chars = line | split: "" -%}{%- for c in chars -%}<div class="fl-tile">{{ c }}</div>{%- endfor -%}</div>
+      {%- endfor -%}
+    </div>
+    <div class="fl-foot"><span>Données ADS-B : adsb.lol (ODbL)</span><span>{% if t.last_seen_txt != "" %}Vu à {{ t.last_seen_txt }}{% endif %}</span></div>
+  </div>
+  {%- else -%}
+  {%- assign fcols = 28 -%}{%- if narrow -%}{%- assign fcols = 20 -%}{%- endif -%}
+  <div class="rc rc--flap rc--n{{ n }}{% if narrow %} rc--narrow{% endif %}">
+    <div class="fl-head"><span>{% if narrow %}survols{% else %}survols · {{ place_short }}{% endif %}</span><span>{{ updated_txt }}</span></div>
+    <div class="fl-labels"><span class="c1">vol</span><span class="c2">de</span><span class="c3">vers</span><span class="c4">alt m</span>{% unless narrow %}<span class="c5">km/h</span><span class="c6">cap</span>{% endunless %}</div>
+    <div class="fl-body">
+      {%- for f in flights limit: n -%}
+      {%- if narrow -%}{%- assign fline = f.flap_short -%}{%- else -%}{%- assign fline = f.flap -%}{%- endif -%}
+      <div class="fl-row">{%- assign chars = fline | split: "" -%}{%- for c in chars -%}<div class="fl-tile">{{ c }}</div>{%- endfor -%}</div>
+      {%- endfor -%}
+      {%- if shown == 0 -%}
+      {%- assign blanks = blanks | minus: 1 -%}
+      <div class="fl-row">{%- if narrow -%}{%- assign calm = "    CIEL  CALME     " -%}{%- else -%}{%- assign calm = "         CIEL  CALME        " -%}{%- endif -%}{%- assign chars = calm | split: "" -%}{%- for c in chars -%}<div class="fl-tile">{{ c }}</div>{%- endfor -%}</div>
+      {%- endif -%}
+      {%- for i in (1..blanks) -%}
+      <div class="fl-row">{%- for j in (1..fcols) -%}<div class="fl-tile"></div>{%- endfor -%}</div>
+      {%- endfor -%}
+    </div>
+    <div class="fl-foot"><span>{% if narrow %}adsb.lol{% else %}Données ADS-B : adsb.lol (ODbL){% endif %}</span><span>{{ total_n }} vol{% if total_n > 1 %}s{% endif %} · {{ radius_km }} km</span></div>
+  </div>
+  {%- endif -%}
+</div>
+
+{%- else -%}
+{%- comment -%} ===================== STYLE CLASSIQUE (framework TRMNL) ===================== {%- endcomment -%}
+{%- if mode == "suivi" -%}
+<div class="layout layout--col gap{% unless short %}--medium{% endunless %}">
+  <div class="flex flex--row flex--center-y flex--between w--full">
+    <div class="flex flex--col">
+      <span class="value {% if short or narrow %}value--large{% else %}value--xxlarge{% endif %}">{{ t.from | default: "---" }}</span>
+      {% unless short %}<span class="label" data-clamp="1">{{ t.from_city }}</span>{% endunless %}
+    </div>
+    <div class="flex flex--col flex--center-x gap--small">
+      <span class="title{% if narrow %} title--small{% endif %}">{{ t.flight }}</span>
+      <span class="label label--inverted">{{ t.status_txt }}</span>
+    </div>
+    <div class="flex flex--col text--right">
+      <span class="value {% if short or narrow %}value--large{% else %}value--xxlarge{% endif %}">{{ t.to | default: "---" }}</span>
+      {% unless short %}<span class="label" data-clamp="1">{{ t.to_city }}</span>{% endunless %}
+    </div>
+  </div>
+  {%- if t.progress_pct != nil -%}
+  <div class="progress-bar{% unless short %} progress-bar--large{% endunless %} w--full"><div class="track"><div class="fill bg--black" style="width: {{ t.progress_pct }}%"></div></div></div>
+  <span class="label text--center">{{ t.progress_pct }} %{% if t.remaining_km and t.remaining_km > 0 %} · {{ t.remaining_txt }} km restants{% endif %}{% if t.eta_txt != "" %} · arrivée vers {{ t.eta_txt }}{% endif %}</span>
+  {%- else -%}
+  <span class="label text--center">{% if t.status == "attente" %}Le vol apparaîtra dès que son transpondeur émettra{% else %}Route inconnue{% endif %}</span>
+  {%- endif -%}
+  {%- unless short or t.status == "attente" -%}
+  <div class="divider"></div>
+  <div class="grid grid--cols-{% if narrow %}2{% else %}4{% endif %}">
+    <div class="item"><div class="meta"></div><div class="content"><span class="value value--small">{{ t.alt_txt }}</span><span class="label">Altitude (m)</span></div></div>
+    <div class="item"><div class="meta"></div><div class="content"><span class="value value--small">{{ t.speed_txt }}</span><span class="label">Vitesse (km/h)</span></div></div>
+    <div class="item"><div class="meta"></div><div class="content"><span class="value value--small">{{ t.track_txt }}°</span><span class="label">Cap</span></div></div>
+    <div class="item"><div class="meta"></div><div class="content"><span class="value value--small">{{ t.vr_txt }}</span><span class="label">Vertical (m/s)</span></div></div>
+  </div>
+  {%- endunless -%}
+</div>
+{%- else -%}
+<div class="layout layout--col layout--top layout--stretch-x gap--small">
+  {%- if shown == 0 -%}
+  <div class="flex flex--col flex--center gap h--full w--full">
+    <span class="value value--large">Ciel calme</span>
+    <span class="label">Aucun avion à moins de {{ radius_km }} km</span>
+  </div>
+  {%- else -%}
+  {%- for f in flights limit: n -%}
+  {%- capture route_txt -%}{% if f.has_route %}{{ f.from }} – {{ f.to }}{% else %}– – –{% endif %}{%- endcapture -%}
+  {%- capture who_txt -%}{{ f.type }}{% if f.airline != "" %} · {{ f.airline }}{% endif %}{%- endcapture -%}
+  {%- if narrow -%}
+  <div class="flex flex--col flex--left w--full">
+    <div class="flex flex--row flex--between w--full flex--center-y">
+      <span class="value value--small">{{ f.flight }}</span>
+      <span class="value value--small">{{ route_txt }}</span>
+    </div>
+    <span class="label label--small" data-clamp="1">{{ who_txt }}</span>
+    <span class="label label--small">{{ f.alt_txt }} m · {{ f.speed_txt }} km/h · {{ f.dist_km }} km</span>
+  </div>
+  {%- else -%}
+  <div class="grid grid--cols-12 w--full">
+    <div class="col--span-4 flex flex--col flex--left">
+      <span class="value value--small">{{ f.flight }}</span>
+      <span class="label label--small" data-clamp="1">{{ who_txt }}</span>
+    </div>
+    <div class="col--span-4 flex flex--col flex--left">
+      <span class="value value--small">{{ route_txt }}</span>
+      <span class="label label--small" data-clamp="1">{% if f.has_route %}{{ f.from_city }} – {{ f.to_city }}{% else %}Route inconnue{% endif %}</span>
+    </div>
+    <div class="col--span-4 flex flex--col flex--right text--right">
+      <span class="label">{{ f.alt_txt }} m · {{ f.speed_txt }} km/h</span>
+      <span class="label label--small">cap {{ f.track_txt }}° · {{ f.vr_txt }} m/s · {{ f.dist_km }} km</span>
+    </div>
+  </div>
+  {%- endif -%}
+  {%- unless forloop.last -%}<div class="divider"></div>{%- endunless -%}
+  {%- endfor -%}
+  {%- endif -%}
+</div>
+{%- endif -%}
+<div class="title_bar">
+  <img class="image image-stroke" src="data:image/svg+xml;base64,{{ svg_logo | base64_encode }}" />
+  <span class="title">Radar du ciel</span>
+  <span class="instance">{{ title_line }}</span>
+</div>
+{%- endif -%}

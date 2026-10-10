@@ -1,0 +1,9 @@
+- keyname: style
+  field_type: select
+  name: Style d'affichage
+  description: Classique (framework TRMNL), panneau LED à points, ou tableau d'aéroport à palettes.
+  options:
+  - "Classique: classique"
+  - "LED: led"
+  - "Flip-flap: flip-flap"
+  default: classique

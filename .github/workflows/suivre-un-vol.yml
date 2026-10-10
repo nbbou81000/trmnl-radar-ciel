@@ -1,0 +1,28 @@
+name: Suivre un vol
+
+on:
+  workflow_dispatch:
+    inputs:
+      vol:
+        description: "Vol à suivre : numéro (AF6125), indicatif (AFR6125) ou immatriculation (F-HPNA)"
+        required: true
+        type: string
+      jusqu_au:
+        description: "Date de fin facultative (AAAA-MM-JJ). Sinon : arrêt 45 min après l'atterrissage, ou au bout de 48 h"
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: radar
+  cancel-in-progress: false
+
+jobs:
+  radar:
+    uses: ./.github/workflows/_radar.yml
+    with:
+      action: suivre
+      vol: ${{ inputs.vol }}
+      jusqu_au: ${{ inputs.jusqu_au }}

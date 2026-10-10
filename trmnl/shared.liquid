@@ -1,0 +1,68 @@
+<link href="https://fonts.googleapis.com/css2?family=Doto:wght@900&family=Oswald:wght@600&display=block" rel="stylesheet">
+<style>
+  /* Radar du ciel — styles LED et flip-flap (le style Classique n'utilise que le framework TRMNL) */
+  .rc { position: relative; width: 100%; height: 100%; container-type: size; overflow: hidden; --rows: 5; }
+  .rc--n1 { --rows: 1; } .rc--n2 { --rows: 2; } .rc--n3 { --rows: 3; } .rc--n4 { --rows: 4; } .rc--n5 { --rows: 5; } .rc--n6 { --rows: 6; }
+
+  /* ---------- LED ---------- */
+  .rc--led { background: #000; color: #fff; border-radius: 8px; padding: 2.5cqh 3cqw; box-sizing: border-box;
+             font-family: "Doto", ui-monospace, monospace; font-weight: 900; text-transform: uppercase; line-height: 1; }
+  .rc--led .led-head, .rc--led .led-foot { display: flex; justify-content: space-between; align-items: center; white-space: nowrap; }
+  .rc--led .led-head { height: 12cqh; font-size: min(8cqh, 6cqw); border-bottom: 0.6cqh dotted #fff; }
+  .rc--led .led-foot { position: absolute; left: 3cqw; right: 3cqw; bottom: 2cqh; height: 8cqh; font-size: max(12px, min(5.5cqh, 3.6cqw)); border-top: 0.6cqh dotted #fff; }
+  .rc--led .led-body { height: calc(100cqh - 5cqh - 12cqh - 10cqh); display: flex; flex-direction: column; justify-content: flex-start; }
+  .rc--led .led-row { height: calc((100cqh - 27cqh) / var(--rows)); display: flex; flex-direction: column; justify-content: center; gap: 1.2cqh; overflow: hidden; }
+  .rc--led .led-main { display: grid; grid-template-columns: 34% 38% 28%; align-items: baseline; white-space: nowrap;
+                       font-size: min(calc((100cqh - 27cqh) / var(--rows) * 0.46), 7.4cqw); }
+  .rc--led .led-main > :last-child { text-align: right; }
+  .rc--led .led-sub { white-space: nowrap; font-size: min(calc((100cqh - 27cqh) / var(--rows) * 0.24), 4.2cqw); letter-spacing: 0.02em; }
+  .rc--led .led-empty { height: 100%; display: flex; align-items: center; justify-content: center; text-align: center; font-size: min(9cqh, 6cqw); line-height: 1.3; }
+  .rc--led.rc--narrow .led-main { grid-template-columns: 52% 48%; }
+  .rc--led.rc--narrow .led-main > .led-type { display: none; }
+  .rc--led.rc--narrow .led-main > :nth-child(2) { text-align: right; }
+
+  /* LED : suivi d'un vol */
+  .rc--led .lt-route { height: 30cqh; display: grid; grid-template-columns: 1fr auto 1fr; align-items: end; }
+  .rc--led .lt-code { font-size: min(20cqh, 13cqw); }
+  .rc--led .lt-city { font-size: min(4.6cqh, 3.2cqw); margin-top: 1.5cqh; white-space: nowrap; overflow: hidden; }
+  .rc--led .lt-to { text-align: right; }
+  .rc--led .lt-mid { font-size: min(6cqh, 4cqw); padding: 0 2cqw 4cqh; text-align: center; }
+  .rc--led .lt-bar { display: grid; grid-template-columns: repeat(30, 1fr); gap: 0.8cqw; margin: 4cqh 0 3cqh; align-items: center; }
+  .rc--led .lt-dot { aspect-ratio: 1; border-radius: 50%; border: 0.35cqw solid #fff; box-sizing: border-box; transform: scale(0.55); }
+  .rc--led .lt-dot--on { background: #fff; transform: none; }
+  .rc--led .lt-info { text-align: center; font-size: min(5.6cqh, 3.9cqw); white-space: nowrap; }
+  .rc--led .lt-info--alone { margin-top: 6cqh; }
+  .rc--led .lt-metrics { display: grid; grid-template-columns: repeat(4, 1fr); text-align: center; margin-top: 4.5cqh; }
+  .rc--led .lt-metrics span { display: block; }
+  .rc--led .lt-k { font-size: min(4.2cqh, 2.9cqw); margin-bottom: 1.5cqh; }
+  .rc--led .lt-v { font-size: min(7cqh, 4.8cqw); }
+  .rc--led.rc--short .lt-route { height: 38cqh; }
+  .rc--led.rc--short .lt-city, .rc--led.rc--short .lt-metrics { display: none; }
+  .rc--led.rc--narrow .lt-metrics { grid-template-columns: repeat(2, 1fr); row-gap: 3cqh; }
+
+  /* ---------- Flip-flap ---------- */
+  .rc--flap { background: #fff; color: #000; font-family: "Oswald", "Arial Narrow", Arial, sans-serif; font-weight: 600; text-transform: uppercase; line-height: 1; --cols: 28; }
+  .rc--flap .fl-head { height: 11cqh; background: #000; color: #fff; border-radius: 6px; display: flex; justify-content: space-between; align-items: center;
+                       padding: 0 2.5cqw; font-size: min(6.4cqh, 4.4cqw); letter-spacing: 0.12em; white-space: nowrap; }
+  .rc--flap .fl-labels, .rc--flap .fl-row { display: grid; grid-template-columns: repeat(var(--cols), 1fr); column-gap: 0.45cqw; }
+  .rc--flap .fl-labels { height: 7cqh; align-items: end; padding-bottom: 1cqh; font-size: max(11px, min(4.2cqh, 2.6cqw)); letter-spacing: 0.06em; white-space: nowrap; }
+  .rc--flap .fl-body { height: calc(100cqh - 11cqh - 7cqh - 8cqh); display: flex; flex-direction: column; justify-content: space-evenly; }
+  .rc--flap .fl-row { height: min(calc((100cqh - 26cqh) / var(--rows) - 1.6cqh), 15cqh); }
+  .rc--flap .fl-tile { position: relative; background: #000; color: #fff; border-radius: 3px; display: flex; align-items: center; justify-content: center;
+                       font-size: min(calc(min((100cqh - 26cqh) / var(--rows) - 1.6cqh, 15cqh) * 0.66), calc(100cqw / var(--cols) * 1.05)); overflow: hidden; }
+  .rc--flap .fl-tile::after { content: ""; position: absolute; left: 0; right: 0; top: calc(50% - 1px); border-top: 2px solid #000; }
+  .rc--flap .fl-foot { position: absolute; left: 0; right: 0; bottom: 0; height: 7cqh; display: flex; justify-content: space-between; align-items: center;
+                       font-size: max(12px, min(4.4cqh, 2.8cqw)); font-weight: 400; text-transform: none; white-space: nowrap; }
+  .rc--flap .fl-empty { flex: 1; display: flex; align-items: center; justify-content: center; font-size: min(8cqh, 5cqw); }
+  .rc--flap.rc--track, .rc--flap.rc--narrow { --cols: 20; }
+  .rc--flap.rc--track .fl-body { height: calc(100cqh - 11cqh - 8cqh); padding-top: 1cqh; }
+  .rc--flap.rc--track .fl-row { height: min(calc((100cqh - 20cqh) / var(--rows) - 1.6cqh), 15cqh); }
+  .rc--flap.rc--track .fl-tile { font-size: min(calc(min((100cqh - 20cqh) / var(--rows) - 1.6cqh, 15cqh) * 0.66), calc(100cqw / var(--cols) * 1.05)); }
+  .rc--flap .fl-labels .c1 { grid-column: 1 / span 7; } .rc--flap .fl-labels .c2 { grid-column: 8 / span 4; }
+  .rc--flap .fl-labels .c3 { grid-column: 12 / span 4; } .rc--flap .fl-labels .c4 { grid-column: 16 / span 5; text-align: right; }
+  .rc--flap.rc--narrow .fl-labels .c4 { grid-column: 16 / span 5; }
+  .rc--flap .fl-labels .c5 { grid-column: 21 / span 4; text-align: right; } .rc--flap .fl-labels .c6 { grid-column: 26 / span 3; text-align: right; }
+</style>
+{%- capture svg_logo -%}
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 10h4a2 2 0 0 1 0 4h-4l-4 7h-3l2 -7h-4l-2 2h-3l2 -4l-2 -4h3l2 2h4l-2 -7h3z"/></svg>
+{%- endcapture -%}

@@ -1,0 +1,319 @@
+// Radar du ciel — collecte les avions autour de chez soi (adsb.lol)
+// et les routes (adsbdb.com), puis écrit flights.json pour le TRMNL.
+//
+// Variables d'environnement :
+//   DATA_DIR      dossier où lire/écrire flights.json, cache.json, track.json
+//   ACTION        "actualiser" (défaut) | "suivre" | "arreter"
+//   TRACK_QUERY   vol à suivre (AF6125, AFR6125 ou F-HPNA) pour ACTION=suivre
+//   TRACK_UNTIL   date de fin facultative (AAAA-MM-JJ) pour ACTION=suivre
+
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
+import { join, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
+import { TYPES } from "./types.mjs";
+
+const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
+const CONFIG = JSON.parse(readFileSync(join(ROOT, "config.json"), "utf8"));
+const DATA_DIR = process.env.DATA_DIR || join(ROOT, "data");
+const ACTION = (process.env.ACTION || "actualiser").toLowerCase();
+const TZ = CONFIG.fuseau || "Europe/Paris";
+const NOW = new Date();
+const UA = "trmnl-radar-ciel (github.com/nbbou81000)";
+
+const ROUTE_TTL_MS = 12 * 3600e3;        // une route est revérifiée toutes les 12 h
+const TRACK_MAX_MS = 48 * 3600e3;        // un suivi sans date de fin s'arrête après 48 h
+const LANDED_KEEP_MS = 45 * 60e3;        // on garde l'écran « atterri » 45 min
+const FT_TO_M = 0.3048, KT_TO_KMH = 1.852, FPM_TO_MS = 0.00508, NM_TO_KM = 1.852;
+
+mkdirSync(DATA_DIR, { recursive: true });
+const readJson = (f, d) => { try { return JSON.parse(readFileSync(join(DATA_DIR, f), "utf8")); } catch { return d; } };
+const writeJson = (f, o) => writeFileSync(join(DATA_DIR, f), JSON.stringify(o, null, 1) + "\n");
+
+const cache = readJson("cache.json", { routes: {}, aircraft: {} });
+cache.routes ||= {}; cache.aircraft ||= {};
+let track = readJson("track.json", null);
+
+// ---------- utilitaires ----------
+async function getJson(url, tries = 2) {
+  for (let i = 0; i < tries; i++) {
+    try {
+      const r = await fetch(url, { headers: { "User-Agent": UA, Accept: "application/json" }, signal: AbortSignal.timeout(20000) });
+      if (r.status === 404) return null;
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      return await r.json();
+    } catch (e) {
+      if (i === tries - 1) { console.warn(`Échec ${url} : ${e.message}`); return undefined; }
+      await new Promise(res => setTimeout(res, 1500));
+    }
+  }
+}
+const hm = d => new Intl.DateTimeFormat("fr-FR", { timeZone: TZ, hour: "2-digit", minute: "2-digit" }).format(d);
+const thousands = n => String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+const ascii = s => String(s ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").toUpperCase();
+function haversine(lat1, lon1, lat2, lon2) {
+  const R = 6371, t = Math.PI / 180;
+  const a = Math.sin((lat2 - lat1) * t / 2) ** 2 + Math.cos(lat1 * t) * Math.cos(lat2 * t) * Math.sin((lon2 - lon1) * t / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(a));
+}
+const cleanCity = s => String(s || "").split(/[\/,]/)[0].trim();
+
+// ---------- routes et appareils (adsbdb, avec cache) ----------
+async function lookupRoute(callsign) {
+  if (!callsign) return null;
+  const c = cache.routes[callsign];
+  if (c && NOW - new Date(c.at) < ROUTE_TTL_MS) return c.route;
+  const j = await getJson(`https://api.adsbdb.com/v0/callsign/${encodeURIComponent(callsign)}`);
+  if (j === undefined) return c ? c.route : null;   // API en panne : on garde l'ancien
+  const fr = j?.response?.flightroute;
+  const route = fr ? {
+    callsign_icao: fr.callsign_icao || fr.callsign,
+    callsign_iata: fr.callsign_iata && fr.airline?.iata && fr.callsign_iata.startsWith(fr.airline.iata) ? fr.callsign_iata : null,
+    airline: fr.airline?.name || null,
+    from: fr.origin?.iata_code || fr.origin?.icao_code || null,
+    from_city: cleanCity(fr.origin?.municipality) || fr.origin?.name || null,
+    from_name: fr.origin?.name || null,
+    from_lat: fr.origin?.latitude, from_lon: fr.origin?.longitude,
+    to: fr.destination?.iata_code || fr.destination?.icao_code || null,
+    to_city: cleanCity(fr.destination?.municipality) || fr.destination?.name || null,
+    to_name: fr.destination?.name || null,
+    to_lat: fr.destination?.latitude, to_lon: fr.destination?.longitude
+  } : null;
+  cache.routes[callsign] = { at: NOW.toISOString(), route };
+  return route;
+}
+async function lookupAircraft(hex) {
+  if (!hex || hex.startsWith("~")) return null;
+  if (hex in cache.aircraft) return cache.aircraft[hex];
+  const j = await getJson(`https://api.adsbdb.com/v0/aircraft/${hex}`);
+  if (j === undefined) return null;
+  const a = j?.response?.aircraft;
+  const info = a ? { owner: a.registered_owner || null, maker: a.manufacturer || null } : null;
+  cache.aircraft[hex] = info;
+  return info;
+}
+
+// ---------- mise en forme d'un avion ----------
+async function describe(ac) {
+  const callsign = (ac.flight || "").trim() || null;
+  const route = callsign ? await lookupRoute(callsign) : null;
+  const owner = await lookupAircraft(ac.hex);
+  const onGround = ac.alt_baro === "ground";
+  const altFt = onGround ? 0 : (typeof ac.alt_baro === "number" ? ac.alt_baro : ac.alt_geom);
+  const alt = Number.isFinite(altFt) ? altFt * FT_TO_M : null;
+  const spd = Number.isFinite(ac.gs) ? ac.gs * KT_TO_KMH : null;
+  const rateFpm = Number.isFinite(ac.baro_rate) ? ac.baro_rate : ac.geom_rate;
+  let vr = Number.isFinite(rateFpm) ? rateFpm * FPM_TO_MS : null;
+  if (vr !== null && Math.abs(vr) < 1) vr = 0;                 // palier
+  const isRegCallsign = callsign && ac.r && callsign === ac.r.replace(/-/g, "");
+  const flight = route?.callsign_iata || (isRegCallsign ? ac.r : callsign) || ac.r || ac.hex.toUpperCase();
+  const ownerName = owner?.owner && /^private$/i.test(owner.owner) ? "Privé" : owner?.owner;
+  const typeCode = ac.t || "";
+  const vrTxt = vr === null ? "-" : vr > 0 ? `+${Math.round(vr)}` : vr < 0 ? `${Math.round(vr)}` : "0";
+  const o = {
+    flight,
+    callsign: callsign || "",
+    reg: ac.r || "",
+    airline: route?.airline || ownerName || (isRegCallsign ? "Privé" : ""),
+    type: TYPES[typeCode] || typeCode || "",
+    type_code: typeCode,
+    from: route?.from || "", to: route?.to || "",
+    from_city: route?.from_city || "", to_city: route?.to_city || "",
+    has_route: !!(route?.from && route?.to),
+    on_ground: onGround,
+    alt_m: alt === null ? null : Math.round(alt),
+    alt_txt: alt === null ? "-" : thousands(alt),
+    speed_kmh: spd === null ? null : Math.round(spd),
+    speed_txt: spd === null ? "-" : String(Math.round(spd)),
+    track_deg: Number.isFinite(ac.track) ? Math.round(ac.track) % 360 : null,
+    track_txt: Number.isFinite(ac.track) ? String(Math.round(ac.track) % 360).padStart(3, "0") : "-",
+    vr_ms: vr === null ? null : Math.round(vr),
+    vr_txt: vrTxt,
+    vr_dir: vr === null ? "inconnu" : vr > 0 ? "montee" : vr < 0 ? "descente" : "palier",
+    lat: ac.lat, lon: ac.lon,
+    _route: route
+  };
+  return o;
+}
+
+// Ligne de 28 caractères pour le style flip-flap : VOL DE VERS ALT KMH CAP
+function flapZone(f) {
+  const fl = ascii(f.flight).slice(0, 6).padEnd(7);
+  const from = ascii(f.from || "---").slice(0, 3).padEnd(3);
+  const to = ascii(f.to || "---").slice(0, 3).padEnd(3);
+  const alt = (f.alt_m === null ? "-" : String(f.alt_m)).slice(0, 5).padStart(5);
+  const spd = (f.speed_kmh === null ? "-" : String(f.speed_kmh)).slice(0, 4).padStart(4);
+  const cap = (f.track_deg === null ? "-" : String(f.track_deg).padStart(3, "0")).padStart(3);
+  return `${fl}${from} ${to} ${alt}${spd} ${cap}`;
+}
+// Version courte (20 caractères) pour les vues étroites : VOL DE VERS ALT
+const flapZoneShort = f => flapZone(f).slice(0, 20);
+const flapLine = (s, w = 20) => ascii(s).slice(0, w).padEnd(w);
+const fitWords = (s, w) => { const a = ascii(s); if (a.length <= w) return a; const cut = a.slice(0, w + 1).lastIndexOf(" "); return cut > 2 ? a.slice(0, cut) : a.slice(0, w); };
+
+// ---------- mode zone ----------
+async function zone() {
+  const radiusNm = Math.max(1, Math.round(CONFIG.rayon_km / NM_TO_KM));
+  const j = await getJson(`https://api.adsb.lol/v2/point/${CONFIG.latitude}/${CONFIG.longitude}/${radiusNm}`, 3);
+  if (!j) return { ok: false };
+  const list = (j.ac || [])
+    .filter(a => Number.isFinite(a.lat) && Number.isFinite(a.lon))
+    .filter(a => CONFIG.inclure_au_sol || a.alt_baro !== "ground")
+    .map(a => ({ a, d: haversine(CONFIG.latitude, CONFIG.longitude, a.lat, a.lon) }))
+    .filter(x => x.d <= CONFIG.rayon_km)
+    .sort((x, y) => x.d - y.d);
+  const flights = [];
+  for (const { a, d } of list.slice(0, CONFIG.vols_max)) {
+    const f = await describe(a);
+    f.dist_km = Math.round(d);
+    f.flap = flapZone(f);
+    f.flap_short = flapZoneShort(f);
+    delete f._route;
+    flights.push(f);
+  }
+  return { ok: true, total: list.length, flights };
+}
+
+// ---------- mode suivi ----------
+async function findTracked(query) {
+  const q = query.toUpperCase().replace(/\s+/g, "");
+  const tryAc = async url => { const r = await getJson(url); return r?.ac?.[0] || null; };
+  let route = null, ac = null;
+  const looksReg = q.includes("-") || /^N\d/.test(q);
+  if (looksReg) ac = await tryAc(`https://api.adsb.lol/v2/reg/${encodeURIComponent(q)}`);
+  if (!ac) {
+    route = await lookupRoute(q);
+    const cs = route?.callsign_icao || q;
+    ac = await tryAc(`https://api.adsb.lol/v2/callsign/${encodeURIComponent(cs)}`);
+    if (!ac && cs !== q) ac = await tryAc(`https://api.adsb.lol/v2/callsign/${encodeURIComponent(q)}`);
+  }
+  if (!ac && !looksReg) ac = await tryAc(`https://api.adsb.lol/v2/reg/${encodeURIComponent(q)}`);
+  return { ac, route };
+}
+
+async function trackScreen() {
+  const { ac, route: r0 } = await findTracked(track.query);
+  let f = null, route = r0;
+  if (ac) {
+    f = await describe(ac);
+    route = f._route || route;
+    delete f._route;
+  }
+  const t = {
+    query: track.query.toUpperCase(),
+    flight: f?.flight || route?.callsign_iata || track.query.toUpperCase(),
+    airline: f?.airline || route?.airline || "",
+    type: f?.type || track.last?.type || "", reg: f?.reg || track.last?.reg || "",
+    from: route?.from || "", to: route?.to || "",
+    from_city: route?.from_city || "", to_city: route?.to_city || "",
+    has_route: !!(route?.from && route?.to),
+    until: track.until || ""
+  };
+
+  let status;
+  if (f && !f.on_ground) { status = "en_vol"; track.seen_airborne = true; track.landed_at = null; }
+  else if (f && f.on_ground) status = track.seen_airborne ? "atterri" : "au_sol";
+  else status = track.seen_airborne ? "signal_perdu" : "attente";
+
+  // Progression
+  let pos = f ? { lat: f.lat, lon: f.lon } : track.last?.lat ? { lat: track.last.lat, lon: track.last.lon } : null;
+  let pct = null, remaining = null, eta = null;
+  if (t.has_route && Number.isFinite(route.from_lat) && Number.isFinite(route.to_lat) && pos) {
+    const done = haversine(route.from_lat, route.from_lon, pos.lat, pos.lon);
+    const rem = haversine(pos.lat, pos.lon, route.to_lat, route.to_lon);
+    pct = Math.max(0, Math.min(100, Math.round(100 * done / (done + rem || 1))));
+    remaining = Math.round(rem);
+    if (status === "signal_perdu" && rem < 40) status = "atterri";
+    if (status === "en_vol" && f.speed_kmh > 150) eta = hm(new Date(NOW.getTime() + (rem / f.speed_kmh) * 3600e3 + 8 * 60e3));
+  }
+  if (status === "atterri") { pct = 100; remaining = 0; track.landed_at ||= NOW.toISOString(); }
+  if (status === "au_sol" && pct === null) pct = 0;
+
+  const labels = { en_vol: "En vol", au_sol: "Au sol", atterri: "Atterri", signal_perdu: "Signal perdu", attente: "Pas encore détecté" };
+  Object.assign(t, {
+    status, status_txt: labels[status],
+    progress_pct: pct, progress_txt: pct === null ? "-" : `${pct} %`,
+    remaining_km: remaining, remaining_txt: remaining === null ? "-" : thousands(remaining),
+    eta_txt: eta || "",
+    alt_txt: f && !f.on_ground ? f.alt_txt : "-", speed_txt: f ? f.speed_txt : "-",
+    track_txt: f ? f.track_txt : "-", vr_txt: f && !f.on_ground ? f.vr_txt : "-", vr_dir: f ? f.vr_dir : "inconnu",
+    last_seen_txt: f ? hm(NOW) : track.last?.seen ? hm(new Date(track.last.seen)) : "",
+    // segments pour la barre en points (style LED) : 30 pas
+    progress_steps: pct === null ? 0 : Math.round(pct * 30 / 100)
+  });
+  t.flap = [
+    flapLine(`${t.flight} ${t.status_txt}`),
+    flapLine(`DE   ${t.from || "---"} ${fitWords(t.from_city, 11)}`),
+    flapLine(`VERS ${t.to || "---"} ${fitWords(t.to_city, 11)}`),
+    flapLine(status === "en_vol" ? `ALT ${f.alt_m}M ${f.speed_kmh}KMH` : t.type || ""),
+    flapLine(pct === null ? "" : `FAIT ${pct}% RESTE ${remaining}KM`),
+    flapLine(eta ? `ARRIVEE VERS ${eta}` : status === "atterri" ? "BIENVENUE" : "")
+  ];
+
+  if (f) track.last = { lat: f.lat, lon: f.lon, seen: NOW.toISOString(), type: f.type, reg: f.reg };
+  return t;
+}
+
+function trackExpired() {
+  if (!track) return false;
+  if (track.until) {
+    const end = new Date(`${track.until}T23:59:59`);
+    if (NOW > end) return true;
+  } else if (NOW - new Date(track.started_at) > TRACK_MAX_MS) return true;
+  if (track.landed_at && NOW - new Date(track.landed_at) > LANDED_KEEP_MS) return true;
+  return false;
+}
+
+// ---------- programme principal ----------
+if (ACTION === "suivre") {
+  const q = (process.env.TRACK_QUERY || "").trim();
+  if (!q) { console.error("Indique un vol à suivre."); process.exit(1); }
+  const until = (process.env.TRACK_UNTIL || "").trim();
+  if (until && !/^\d{4}-\d{2}-\d{2}$/.test(until)) { console.error("Date de fin au format AAAA-MM-JJ."); process.exit(1); }
+  track = { query: q, until: until || null, started_at: NOW.toISOString(), seen_airborne: false, landed_at: null, last: null };
+  console.log(`Suivi démarré : ${q}${until ? ` jusqu'au ${until}` : ""}`);
+} else if (ACTION === "arreter") {
+  track = null;
+  console.log("Suivi arrêté.");
+}
+if (trackExpired()) { console.log(`Fin du suivi de ${track.query}.`); track = null; }
+
+const out = {
+  updated_at: NOW.toISOString(),
+  updated_txt: hm(NOW),
+  place: CONFIG.lieu, place_short: CONFIG.lieu_court || CONFIG.lieu,
+  radius_km: CONFIG.rayon_km,
+  mode: track ? "suivi" : "zone"
+};
+
+if (track) {
+  out.track = await trackScreen();
+} else {
+  const z = await zone();
+  if (!z.ok) {
+    // adsb.lol injoignable : on garde l'écran précédent plutôt qu'un écran vide
+    const prev = readJson("flights.json", null);
+    if (prev && prev.mode === "zone") {
+      prev.stale = true;
+      writeJson("flights.json", prev);
+      console.log("adsb.lol injoignable : écran précédent conservé.");
+      process.exit(0);
+    }
+    out.flights = []; out.total = 0; out.error = "Données indisponibles";
+  } else {
+    out.flights = z.flights; out.total = z.total;
+  }
+  out.count = out.flights.length;
+  out.nearest = out.flights[0] || null;
+}
+
+// Nettoyage du cache (routes vues il y a plus de 3 jours)
+for (const [k, v] of Object.entries(cache.routes)) if (NOW - new Date(v.at) > 3 * 86400e3) delete cache.routes[k];
+const hexes = Object.keys(cache.aircraft);
+if (hexes.length > 5000) for (const h of hexes.slice(0, hexes.length - 5000)) delete cache.aircraft[h];
+
+writeJson("flights.json", out);
+writeJson("cache.json", cache);
+if (track) writeJson("track.json", track); else writeJson("track.json", null);
+console.log(out.mode === "suivi"
+  ? `Suivi ${out.track.flight} : ${out.track.status_txt} (${out.track.progress_txt})`
+  : `${out.count} vol(s) affiché(s) sur ${out.total} dans ${CONFIG.rayon_km} km`);
