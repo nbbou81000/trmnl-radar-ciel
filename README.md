@@ -8,6 +8,7 @@ Affiche sur un TRMNL les avions qui survolent Cagnac-les-Mines (rayon de 30 km),
 - **Ce que survole l'avion** en mode suivi : ville proche, pays, mer ou océan.
 - **Fiche détaillée** (option) : aéroports complets, distance, décollage estimé, arrivée prévue ; modèle exact, immatriculation, exploitant, photo ; vitesse air, Mach, vent (de face ou arrière), température extérieure, transpondeur.
 - **Quatre styles de carte** : Contours, Rues, Minimal, Épuré.
+- **Zoom automatique** : après le décollage, en approche (moins de 120 km de l'arrivée ou sous 3 500 m) et au sol, la carte zoome sur l'avion et l'aéroport ; le reste du temps, elle montre tout le trajet.
 - **Unités** : mètres, km/h, m/s.
 - **Données** : position ADS-B via [adsb.lol](https://adsb.lol) (ODbL), routes et compagnies via [adsbdb.com](https://www.adsbdb.com). Tout est gratuit et sans clé.
 
@@ -21,6 +22,8 @@ Affiche sur un TRMNL les avions qui survolent Cagnac-les-Mines (rayon de 30 km),
 | ![](docs/apercus/suivi-carte.png) | ![](docs/apercus/suivi-carte-long-courrier.png) |
 | **Fiche détaillée** | **Carte « Minimal »** |
 | ![](docs/apercus/suivi-fiche.png) | ![](docs/apercus/carte-minimal.png) |
+| **En approche (style Rues)** | |
+| ![](docs/apercus/carte-approche.png) | |
 
 ## Comment ça marche
 

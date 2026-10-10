@@ -90,7 +90,7 @@
           <div class="meta"></div>
           <div class="content">
             <span class="value value--small">{{ t.flight }}</span>
-            <span class="label">{% if t.has_route %}{{ t.from }} – {{ t.to }} · {% endif %}{{ t.status_txt }}{% if t.progress_pct != nil %} · {{ t.progress_pct }} %{% endif %}</span>
+            <span class="label">{% if t.has_route %}{{ t.from }} – {{ t.to }} · {% endif %}{% if t.map_focus_txt and t.map_focus_txt != "" %}{{ t.map_focus_txt }}{% else %}{{ t.status_txt }}{% endif %}{% if t.progress_pct != nil %} · {{ t.progress_pct }} %{% endif %}</span>
           </div>
         </div>
         {%- if t.over_txt and t.over_txt != "" -%}
@@ -128,6 +128,7 @@
   var done = {{ t.map_done_js | default: "[]" }}, todo = {{ t.map_todo_js | default: "[]" }};
   var pos = {{ t.map_pos_js | default: "null" }}, from = {{ t.map_from_js | default: "null" }}, to = {{ t.map_to_js | default: "null" }};
   var heading = {{ t.map_heading | default: 0 }};
+  var focus = {{ t.map_focus_js | default: "null" }};
   function whenReady(cb) {
     var tries = 0;
     (function attempt() {
@@ -163,15 +164,18 @@
         if (to) TRMNLMaps.dot(map, to, { el: el, id: "to", hollow: true });
         if (pos) addPlane(map, TRMNLPaint.px({% if short or narrow %}26{% else %}36{% endif %}, { el: el }));
       });
-      var pts = done.concat(todo);
+      var pts = focus && focus.length ? focus.slice() : done.concat(todo);
+      var maxZoom = focus && focus.length ? (focus.length === 1 ? 12 : 11) : 9;
       var home = [{{ home_lon | default: 2.17 }}, {{ home_lat | default: 43.988 }}];
-      if (pos) pts.push(pos);
-      if (from) pts.push(from);
-      if (to) pts.push(to);
+      if (!(focus && focus.length)) {
+        if (pos) pts.push(pos);
+        if (from) pts.push(from);
+        if (to) pts.push(to);
+      }
       var gutter = TRMNLPaint.px(28, { el: el });
       var card = document.getElementById(cardId);
       var left = card ? card.offsetLeft + card.offsetWidth + gutter : gutter;
-      if (pts.length) TRMNLMaps.fit(map, pts, { padding: { top: gutter, right: gutter, bottom: gutter, left: left }, maxZoom: 9 });
+      if (pts.length) TRMNLMaps.fit(map, pts, { padding: { top: gutter, right: gutter, bottom: gutter, left: left }, maxZoom: maxZoom });
       else { map.setCenter(home); map.setZoom(4); }
       return map;
     });

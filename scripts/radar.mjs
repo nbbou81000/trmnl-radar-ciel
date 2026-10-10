@@ -341,6 +341,23 @@ async function trackScreen() {
   t.map_heading = f && Number.isFinite(f.track_deg) ? f.track_deg : 0;
   t.has_map = !!(posU || (fromU && toU));
 
+  // Cadrage : près d'un aéroport (montée après décollage, approche, au sol),
+  // la carte zoome sur l'avion et l'aéroport au lieu de montrer tout le trajet.
+  const altM = f && !f.on_ground ? f.alt_m : null;
+  const dFrom = A && pos ? haversine(A.lat, A.lon, pos.lat, pos.lon) : Infinity;
+  const dTo = B && pos ? haversine(B.lat, B.lon, pos.lat, pos.lon) : Infinity;
+  let focus = "trajet", focusPts = null;
+  if (status === "atterri" && toU) { focus = "arrivee"; focusPts = [toU]; }
+  else if (status === "au_sol" && fromU) { focus = "depart"; focusPts = [fromU]; }
+  else if (posU && status === "en_vol") {
+    const low = altM !== null && altM < 3500;
+    if (dTo < 120 || (low && dTo <= dFrom)) { focus = "arrivee"; focusPts = toU ? [posU, toU] : [posU]; }
+    else if (dFrom < 100 || (low && dFrom < dTo)) { focus = "depart"; focusPts = fromU ? [posU, fromU] : [posU]; }
+  }
+  t.map_focus = focus;
+  t.map_focus_js = js(focusPts);
+  t.map_focus_txt = focus === "arrivee" ? (status === "atterri" ? "À l'arrivée" : "En approche") : focus === "depart" ? (status === "au_sol" ? "Au départ" : "Après le décollage") : "";
+
   // Fiche détaillée
   // Heure de décollage estimée : à la première détection en vol, on retranche
   // le temps qu'il a fallu pour parcourir la distance déjà faite.
