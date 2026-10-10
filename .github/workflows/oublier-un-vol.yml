@@ -1,0 +1,24 @@
+name: Oublier un vol
+
+# Retire un vol de l'historique des suivis interrompus (utilisé par la télécommande).
+on:
+  workflow_dispatch:
+    inputs:
+      vol:
+        description: "Vol à retirer de l'historique"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: radar
+  cancel-in-progress: false
+
+jobs:
+  radar:
+    uses: ./.github/workflows/_radar.yml
+    with:
+      action: oublier
+      vol: ${{ inputs.vol }}

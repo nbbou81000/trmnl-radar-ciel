@@ -11,6 +11,8 @@
 {%- assign carte_raw = trmnl.plugin_settings.custom_fields_values.style_carte | default: style_carte | default: "outline" | downcase -%}
 {%- if carte_raw contains "street" or carte_raw contains "rue" -%}{%- assign preset = "streets" -%}{%- elsif carte_raw contains "minimal" -%}{%- assign preset = "minimal" -%}{%- elsif carte_raw contains "blank" or carte_raw contains "pur" -%}{%- assign preset = "blank" -%}{%- else -%}{%- assign preset = "outline" -%}{%- endif -%}
 {%- assign dd = t.d -%}
+{%- assign zvue_raw = trmnl.plugin_settings.custom_fields_values.zone_affichage | default: zone_affichage | default: "tableau" | downcase -%}
+{%- if zvue_raw contains "carte" -%}{%- assign zvue = "carte" -%}{%- else -%}{%- assign zvue = "tableau" -%}{%- endif -%}
 {%- capture title_line -%}{% if mode == "suivi" %}Suivi {{ t.flight }}{% else %}{{ place_short }} · {{ total_n }} avion{% if total_n > 1 %}s{% endif %} à {{ radius_km }} km{% endif %} · {{ updated_txt }}{% if stale %} (ancien){% endif %}{%- endcapture -%}
 
 {%- if mode == "suivi" and vue == "fiche" and dd and short != true -%}
@@ -177,6 +179,109 @@
       var left = card ? card.offsetLeft + card.offsetWidth + gutter : gutter;
       if (pts.length) TRMNLMaps.fit(map, pts, { padding: { top: gutter, right: gutter, bottom: gutter, left: left }, maxZoom: maxZoom });
       else { map.setCenter(home); map.setZoom(4); }
+      return map;
+    });
+  });
+})();
+</script>
+
+{%- elsif mode != "suivi" and zvue == "carte" -%}
+{%- comment -%} ===================== CARTE DU MODE ZONE ===================== {%- endcomment -%}
+<script src="https://trmnl.com/js/maplibre-gl/5.24.0/maplibre-gl.js"></script>
+<link href="https://trmnl.com/js/maplibre-gl/5.24.0/maplibre-gl.css" rel="stylesheet">
+{%- assign zn = n -%}
+<div class="layout layout--col">
+  <div id="rc-zmap-{{ sz }}" class="map stretch w--full rounded--base">
+    {%- unless short and narrow -%}
+    <div id="rc-zcard-{{ sz }}" class="absolute {% if narrow %}bottom--2 left--2{% else %}top--2 left--2{% endif %} z--2 {% if short or narrow %}p--2{% else %}p--4{% endif %} w--max-60 bg--canvas outline outline--muted">
+      <div class="flex flex--col gap--small">
+        {%- if shown == 0 -%}
+        <div class="item"><div class="meta"></div><div class="content">
+          <span class="value value--small">Ciel calme</span>
+          <span class="label">Aucun avion à {{ radius_km }} km</span>
+        </div></div>
+        {%- else -%}
+        {%- for f in flights limit: zn -%}
+        <div class="item">
+          <div class="meta"><span class="index">{{ forloop.index }}</span></div>
+          <div class="content">
+            <span class="title title--small">{{ f.flight }}{% if f.has_route %} · {{ f.from }} – {{ f.to }}{% endif %}</span>
+            {%- unless short -%}<span class="label label--small" data-clamp="1">{{ f.type }} · {{ f.alt_txt }} m · {{ f.dist_km }} km</span>{%- endunless -%}
+          </div>
+        </div>
+        {%- endfor -%}
+        {%- endif -%}
+      </div>
+    </div>
+    {%- endunless -%}
+  </div>
+</div>
+<div class="title_bar">
+  <img class="image image-stroke" src="data:image/svg+xml;base64,{{ svg_logo | base64_encode }}" />
+  <span class="title">Radar du ciel</span>
+  <span class="instance">{{ title_line }}</span>
+</div>
+<script type="text/javascript">
+(function () {
+  var el = "rc-zmap-{{ sz }}", cardId = "rc-zcard-{{ sz }}";
+  var planes = ({{ map_flights_js | default: "[]" }}).filter(function (p) { return p[3] <= {{ n }}; }), circle = {{ map_circle_js | default: "[]" }};
+  var home = [{{ home_lon | default: 2.17 }}, {{ home_lat | default: 43.988 }}];
+  var PLANE = "M12 1.5c.9 0 1.5.8 1.5 1.7V9l8 4.6v2.3l-8-2.4v4.8l2.4 1.8V22L12 21l-3.9 1v-1.9l2.4-1.8v-4.8l-8 2.4v-2.3l8-4.6V3.2c0-.9.6-1.7 1.5-1.7z";
+  function whenReady(cb) {
+    var tries = 0;
+    (function attempt() {
+      if (window.TRMNLMaps && window.maplibregl) return cb();
+      if (++tries > 200) return;
+      setTimeout(attempt, 50);
+    })();
+  }
+  function planeImage(px) {
+    px = Math.round(px);
+    var c = document.createElement("canvas"); c.width = c.height = px;
+    var ctx = c.getContext("2d"); ctx.scale(px / 24, px / 24);
+    var path = new Path2D(PLANE);
+    ctx.lineJoin = "round"; ctx.lineWidth = 2.2; ctx.strokeStyle = "#fff"; ctx.stroke(path);
+    ctx.fillStyle = "#000"; ctx.fill(path);
+    return ctx.getImageData(0, 0, px, px);
+  }
+  whenReady(function () {
+    TRMNLMaps.watch(el, function () {
+      var map = new maplibregl.Map(TRMNLMaps.options({ el: el, preset: "{{ preset }}" }));
+      map.on("load", function () {
+        if (circle.length > 1) TRMNLMaps.route(map, circle, { el: el, id: "rayon", i: 1, n: 2 });
+        TRMNLMaps.dot(map, home, { el: el, id: "maison", hollow: true });
+        if (!planes.length) return;
+        var size = TRMNLPaint.px({% if short or narrow %}24{% else %}32{% endif %}, { el: el });
+        if (!map.hasImage("rc-plane")) map.addImage("rc-plane", planeImage(size));
+        // Numéros des avions (pastilles noires), reliés à la liste de l'encadré
+        var badge = TRMNLPaint.px({% if short or narrow %}16{% else %}20{% endif %}, { el: el });
+        planes.forEach(function (p) {
+          var id = "rc-n" + p[3];
+          if (map.hasImage(id)) return;
+          var px = Math.round(badge), c = document.createElement("canvas"); c.width = c.height = px;
+          var ctx = c.getContext("2d");
+          ctx.fillStyle = "#000"; ctx.beginPath(); ctx.arc(px / 2, px / 2, px / 2 - 1, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = "#fff"; ctx.font = "bold " + Math.round(px * 0.7) + "px sans-serif";
+          ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(String(p[3]), px / 2, px / 2 + 1);
+          map.addImage(id, ctx.getImageData(0, 0, px, px));
+        });
+        map.addSource("rc-planes", { type: "geojson", data: { type: "FeatureCollection", features: planes.map(function (p) {
+          return { type: "Feature", properties: { h: p[2], n: "rc-n" + p[3] }, geometry: { type: "Point", coordinates: [p[0], p[1]] } };
+        }) } });
+        map.addLayer({ id: "rc-planes", type: "symbol", source: "rc-planes", layout: {
+          "icon-image": "rc-plane", "icon-rotate": ["get", "h"], "icon-rotation-alignment": "map",
+          "icon-allow-overlap": true, "icon-ignore-placement": true } });
+        map.addLayer({ id: "rc-planes-n", type: "symbol", source: "rc-planes", layout: {
+          "icon-image": ["get", "n"], "icon-offset": [size * 0.75 / (window.devicePixelRatio || 1), -size * 0.75 / (window.devicePixelRatio || 1)],
+          "icon-allow-overlap": true, "icon-ignore-placement": true } });
+      });
+      var gutter = TRMNLPaint.px(24, { el: el });
+      var card = document.getElementById(cardId);
+      var pad = { top: gutter, right: gutter, bottom: gutter, left: gutter };
+      {% if narrow %}if (card) pad.bottom = card.offsetHeight + gutter * 1.5;{% else %}if (card) pad.left = card.offsetLeft + card.offsetWidth + gutter;{% endif %}
+      var pts = circle.length ? circle.slice() : [home];
+      planes.forEach(function (p) { pts.push([p[0], p[1]]); });
+      TRMNLMaps.fit(map, pts, { padding: pad, maxZoom: 11 });
       return map;
     });
   });

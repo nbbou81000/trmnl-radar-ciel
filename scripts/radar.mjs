@@ -33,6 +33,9 @@ const writeJson = (f, o) => writeFileSync(join(DATA_DIR, f), JSON.stringify(o, n
 const cache = readJson("cache.json", { routes: {}, aircraft: {} });
 cache.routes ||= {}; cache.aircraft ||= {};
 let track = readJson("track.json", null);
+let history = readJson("history.json", []);
+if (!Array.isArray(history)) history = [];
+const normQ = q => String(q || "").toUpperCase().replace(/[\s-]/g, "");
 
 // ---------- utilitaires ----------
 async function getJson(url, tries = 2) {
@@ -404,18 +407,27 @@ async function trackScreen() {
   };
   if (f) { delete f._ac; delete f._owner; }
 
+  track.summary = { flight: t.flight, from: t.from, to: t.to, from_city: t.from_city, to_city: t.to_city, status_txt: t.status_txt };
   if (f) track.last = { lat: f.lat, lon: f.lon, seen: NOW.toISOString(), type: f.type, reg: f.reg, owner: own };
   return t;
 }
 
-function trackExpired() {
-  if (!track) return false;
-  if (track.until) {
-    const end = new Date(`${track.until}T23:59:59`);
+function isExpired(tr) {
+  if (!tr) return false;
+  if (tr.until) {
+    const end = new Date(`${tr.until}T23:59:59`);
     if (NOW > end) return true;
-  } else if (NOW - new Date(track.started_at) > TRACK_MAX_MS) return true;
-  if (track.landed_at && NOW - new Date(track.landed_at) > LANDED_KEEP_MS) return true;
+  } else if (NOW - new Date(tr.started_at) > TRACK_MAX_MS) return true;
+  if (tr.landed_at && NOW - new Date(tr.landed_at) > LANDED_KEEP_MS) return true;
   return false;
+}
+const trackExpired = () => isExpired(track);
+// Met de côté un suivi interrompu avant son terme, pour pouvoir le reprendre
+function shelve(tr) {
+  if (!tr || tr.landed_at) return;
+  history = history.filter(h => normQ(h.query) !== normQ(tr.query));
+  history.unshift(tr);
+  history = history.slice(0, 8);
 }
 
 // ---------- programme principal ----------
@@ -424,15 +436,32 @@ if (ACTION === "suivre") {
   if (!q) { console.error("Indique un vol à suivre."); process.exit(1); }
   const until = (process.env.TRACK_UNTIL || "").trim();
   if (until && !/^\d{4}-\d{2}-\d{2}$/.test(until)) { console.error("Date de fin au format AAAA-MM-JJ."); process.exit(1); }
-  track = { query: q, until: until || null, started_at: NOW.toISOString(), seen_airborne: false, landed_at: null, last: null, trail: [] };
-  console.log(`Suivi démarré : ${q}${until ? ` jusqu'au ${until}` : ""}`);
+  if (track && normQ(track.query) !== normQ(q)) shelve(track);
+  const saved = history.find(h => normQ(h.query) === normQ(q));
+  history = history.filter(h => normQ(h.query) !== normQ(q));
+  if (track && normQ(track.query) === normQ(q)) { if (until) track.until = until; }
+  else if (saved) { track = saved; if (until) track.until = until; }
+  else track = { query: q, until: until || null, started_at: NOW.toISOString(), seen_airborne: false, landed_at: null, last: null, trail: [] };
+  console.log(`Suivi ${saved ? "repris" : "démarré"} : ${q}${track.until ? ` jusqu'au ${track.until}` : ""}`);
 } else if (ACTION === "arreter") {
+  shelve(track);
   track = null;
-  console.log("Suivi arrêté.");
+  console.log("Suivi arrêté (gardé dans l'historique s'il n'est pas terminé).");
+} else if (ACTION === "oublier") {
+  const q = (process.env.TRACK_QUERY || "").trim();
+  history = history.filter(h => normQ(h.query) !== normQ(q));
+  console.log(`Retiré de l'historique : ${q}`);
 }
+history = history.filter(h => !isExpired(h) && !h.landed_at);
 if (trackExpired()) { console.log(`Fin du suivi de ${track.query}.`); track = null; }
 
+const dateFr = iso => new Intl.DateTimeFormat("fr-FR", { timeZone: TZ, day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }).format(new Date(iso));
 const out = {
+  history: history.map(h => ({
+    query: h.query, flight: h.summary?.flight || h.query.toUpperCase(),
+    from: h.summary?.from || "", to: h.summary?.to || "", from_city: h.summary?.from_city || "", to_city: h.summary?.to_city || "",
+    status_txt: h.summary?.status_txt || "", started_txt: dateFr(h.started_at), until: h.until || ""
+  })),
   updated_at: NOW.toISOString(),
   updated_txt: hm(NOW),
   place: CONFIG.lieu, place_short: CONFIG.lieu_court || CONFIG.lieu,
@@ -460,6 +489,16 @@ if (track) {
   }
   out.count = out.flights.length;
   out.nearest = out.flights[0] || null;
+  // Données de la carte du mode zone
+  out.map_flights_js = js(out.flights.map((f, i) => [Math.round(f.lon * 1e4) / 1e4, Math.round(f.lat * 1e4) / 1e4, f.track_deg || 0, i + 1]));
+  const circle = [];
+  for (let i = 0; i <= 72; i++) {
+    const b = i * 5 * Math.PI / 180, d = CONFIG.rayon_km / 6371, la = CONFIG.latitude * Math.PI / 180, lo = CONFIG.longitude * Math.PI / 180;
+    const la2 = Math.asin(Math.sin(la) * Math.cos(d) + Math.cos(la) * Math.sin(d) * Math.cos(b));
+    const lo2 = lo + Math.atan2(Math.sin(b) * Math.sin(d) * Math.cos(la), Math.cos(d) - Math.sin(la) * Math.sin(la2));
+    circle.push([Math.round(lo2 * 180 / Math.PI * 1e4) / 1e4, Math.round(la2 * 180 / Math.PI * 1e4) / 1e4]);
+  }
+  out.map_circle_js = js(circle);
 }
 
 // Nettoyage du cache (routes vues il y a plus de 3 jours)
@@ -470,6 +509,7 @@ if (hexes.length > 5000) for (const h of hexes.slice(0, hexes.length - 5000)) de
 writeJson("flights.json", out);
 writeJson("cache.json", cache);
 if (track) writeJson("track.json", track); else writeJson("track.json", null);
+writeJson("history.json", history);
 console.log(out.mode === "suivi"
   ? `Suivi ${out.track.flight} : ${out.track.status_txt} (${out.track.progress_txt})`
   : `${out.count} vol(s) affiché(s) sur ${out.total} dans ${CONFIG.rayon_km} km`);

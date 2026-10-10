@@ -76,6 +76,15 @@
   .status.ok { color: var(--ok); }
   .status.err { color: var(--err); }
 
+  section.saved { margin-top: 30px; }
+  section.saved h2 { font-size: 20px; margin-bottom: 4px; }
+  section.saved p.lead { color: var(--muted); font-size: 15px; margin: 0 0 10px; }
+  .saved ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+  .saved li { background: #fff; border: 2px solid #000; border-radius: 10px; padding: 12px 14px; display: grid; gap: 6px; }
+  .saved .fl { font: 600 22px/1.1 "Oswald", sans-serif; letter-spacing: .04em; }
+  .saved .meta { color: var(--muted); font-size: 14px; }
+  .saved .btns { display: grid; grid-template-columns: 2fr 1fr; gap: 8px; margin-top: 6px; }
+  .saved .btns button { font-size: 17px; padding: 12px; }
   section.runs { margin-top: 30px; border-top: 1.5px solid var(--line); padding-top: 16px; }
   section.runs h2 { font-size: 18px; margin-bottom: 8px; }
   .runs ul { list-style: none; margin: 0; padding: 0; }
@@ -122,6 +131,12 @@
     <p class="status" id="status" role="status"></p>
   </form>
 
+  <section class="saved" id="saved" hidden>
+    <h2>Suivis mis de côté</h2>
+    <p class="lead">Les vols suivis puis interrompus avant l'atterrissage. Ils disparaissent seuls après l'arrivée prévue ou au bout de 48 h.</p>
+    <ul id="saved-list"></ul>
+  </section>
+
   <section class="runs" id="runs" hidden>
     <h2>Dernières demandes</h2>
     <ul id="runs-list"></ul>
@@ -157,7 +172,10 @@
   function setToken(v) { try { v ? localStorage.setItem(KEY, v) : localStorage.removeItem(KEY); } catch (e) {} }
   function headers() { return { "Authorization": "Bearer " + getToken(), "Accept": "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28" }; }
   function say(msg, kind) { var s = $("status"); s.textContent = msg; s.className = "status" + (kind ? " " + kind : ""); }
-  function busy(on) { ["btn-follow", "btn-home", "btn-refresh"].forEach(function (id) { $(id).disabled = on; }); }
+  function busy(on) {
+    ["btn-follow", "btn-home", "btn-refresh"].forEach(function (id) { $(id).disabled = on; });
+    Array.prototype.forEach.call(document.querySelectorAll(".saved button"), function (b) { b.disabled = on; });
+  }
 
   function showTokenState() {
     var has = !!getToken();
@@ -190,7 +208,34 @@
       $("s-sub").textContent = n ? n + " avion" + (n > 1 ? "s" : "") + " à " + d.radius_km + " km" : "Aucun avion à " + d.radius_km + " km";
       $("btn-home").hidden = true;
     }
+    renderSaved(d.history || []);
     return d;
+  }
+  function renderSaved(list) {
+    var ul = $("saved-list"); ul.innerHTML = "";
+    list.forEach(function (h) {
+      var li = document.createElement("li");
+      var fl = document.createElement("div"); fl.className = "fl";
+      fl.textContent = h.flight + (h.from && h.to ? "  " + h.from + " → " + h.to : "");
+      var meta = document.createElement("div"); meta.className = "meta";
+      meta.textContent = (h.from_city && h.to_city ? h.from_city + " → " + h.to_city + " · " : "") + "suivi depuis le " + h.started_txt + (h.status_txt ? " · dernier état : " + h.status_txt.toLowerCase() : "");
+      var btns = document.createElement("div"); btns.className = "btns";
+      var go = document.createElement("button"); go.type = "button"; go.className = "go"; go.textContent = "Reprendre";
+      go.addEventListener("click", function () {
+        run("Reprise du suivi de " + h.flight, "suivre-un-vol.yml", { vol: h.query, jusqu_au: h.until || "" }, function (d) { return d.mode === "suivi"; });
+      });
+      var rm = document.createElement("button"); rm.type = "button"; rm.className = "home"; rm.textContent = "Retirer";
+      rm.setAttribute("aria-label", "Retirer " + h.flight + " de la liste");
+      rm.addEventListener("click", function () {
+        run("Retrait de " + h.flight, "oublier-un-vol.yml", { vol: h.query }, function (d) {
+          return !(d.history || []).some(function (x) { return x.query === h.query; });
+        });
+      });
+      btns.appendChild(go); btns.appendChild(rm);
+      li.appendChild(fl); li.appendChild(meta); li.appendChild(btns);
+      ul.appendChild(li);
+    });
+    $("saved").hidden = !list.length;
   }
   function refreshScreen() {
     return readData().then(render).catch(function () { $("s-big").textContent = "Écran illisible"; $("screen").classList.remove("loading"); });
@@ -271,7 +316,7 @@
   $("btn-refresh").addEventListener("click", function () { run("Actualisation", "actualiser.yml", {}); });
 
   // ---- Dernières demandes ----
-  var NAMES = { "Suivre un vol": "Suivre un vol", "Arrêter le suivi": "Retour au ciel", "Actualiser le radar": "Actualisation" };
+  var NAMES = { "Suivre un vol": "Suivre un vol", "Arrêter le suivi": "Retour au ciel", "Actualiser le radar": "Actualisation", "Oublier un vol": "Retrait d'un vol" };
   function loadRuns() {
     if (!getToken()) return;
     fetch(API + "/actions/runs?per_page=6&event=workflow_dispatch", { headers: headers() })

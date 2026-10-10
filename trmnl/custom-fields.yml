@@ -8,6 +8,15 @@
   - "Flip-flap: flip-flap"
   default: classique
 
+- keyname: zone_affichage
+  field_type: select
+  name: Écran au-dessus de chez moi
+  description: Tableau des avions proches (dans le style choisi) ou carte avec le rayon de recherche et les avions orientés selon leur cap.
+  options:
+  - "Tableau: tableau"
+  - "Carte: carte"
+  default: tableau
+
 - keyname: suivi_affichage
   field_type: select
   name: Écran pendant le suivi d'un vol
@@ -21,6 +30,7 @@
 - keyname: style_carte
   field_type: select
   name: Style de la carte
+  help_text: S'applique aux deux cartes (au-dessus de chez moi et suivi d'un vol).
   description: Contours (côtes et frontières), Rues (routes, villes et détails), Minimal (terre, eau et grands axes) ou Épuré (fond blanc, seulement le trajet).
   options:
   - "Contours: outline"

@@ -8,6 +8,8 @@ Affiche sur un TRMNL les avions qui survolent Cagnac-les-Mines (rayon de 30 km),
 - **Ce que survole l'avion** en mode suivi : ville proche, pays, mer ou océan.
 - **Fiche détaillée** (option) : aéroports complets, distance, décollage estimé, arrivée prévue ; modèle exact, immatriculation, exploitant, photo ; vitesse air, Mach, vent (de face ou arrière), température extérieure, transpondeur.
 - **Quatre styles de carte** : Contours, Rues, Minimal, Épuré.
+- **Carte au-dessus de chez moi** (option) : le cercle de recherche, la maison et les avions orientés selon leur cap, numérotés comme dans la liste. Le réglage « Style de la carte » s'applique aux deux cartes.
+- **Suivis mis de côté** : un suivi interrompu avant l'atterrissage reste dans la télécommande pour être repris plus tard, avec sa trace.
 - **Zoom automatique** : après le décollage, en approche (moins de 120 km de l'arrivée ou sous 3 500 m) et au sol, la carte zoome sur l'avion et l'aéroport ; le reste du temps, elle montre tout le trajet.
 - **Unités** : mètres, km/h, m/s.
 - **Données** : position ADS-B via [adsb.lol](https://adsb.lol) (ODbL), routes et compagnies via [adsbdb.com](https://www.adsbdb.com). Tout est gratuit et sans clé.
@@ -22,8 +24,8 @@ Affiche sur un TRMNL les avions qui survolent Cagnac-les-Mines (rayon de 30 km),
 | ![](docs/apercus/suivi-carte.png) | ![](docs/apercus/suivi-carte-long-courrier.png) |
 | **Fiche détaillée** | **Carte « Minimal »** |
 | ![](docs/apercus/suivi-fiche.png) | ![](docs/apercus/carte-minimal.png) |
-| **En approche (style Rues)** | |
-| ![](docs/apercus/carte-approche.png) | |
+| **En approche (style Rues)** | **Carte au-dessus de chez moi** |
+| ![](docs/apercus/carte-approche.png) | ![](docs/apercus/zone-carte.png) |
 
 ## Comment ça marche
 
@@ -65,7 +67,7 @@ La branche `data` est réécrite à chaque passage (un seul commit), donc l'hist
 2. Strategy : **Polling**. Polling URL :
    `https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/flights.json`
 3. Refresh rate : le plus court proposé (5 minutes). Règle aussi l'intervalle de rafraîchissement de l'appareil sur 5 minutes.
-4. **Form fields** : colle le contenu de `trmnl/custom-fields.yml`. Trois réglages apparaissent alors dans le plugin : le style d'affichage, l'écran pendant un suivi (tableau, carte ou fiche détaillée) et le style de la carte.
+4. **Form fields** : colle le contenu de `trmnl/custom-fields.yml`. Quatre réglages apparaissent alors dans le plugin : le style d'affichage, l'écran au-dessus de chez moi (tableau ou carte), l'écran pendant un suivi (tableau, carte ou fiche détaillée) et le style de la carte.
 5. **Edit Markup** : colle chaque fichier dans l'onglet correspondant.
    - `trmnl/shared.liquid` → Shared
    - `trmnl/full.liquid` → Full
@@ -80,7 +82,7 @@ Plutôt que de passer par l'onglet Actions, utilise la page **https://nbbou81000
 
 - Elle montre ce qu'affiche le radar en ce moment.
 - Tape un vol : elle vérifie la route (« Air France AF6125 : Toulouse → Paris ») avant que tu valides avec **Suivre ce vol**.
-- **Revenir au ciel de Cagnac** arrête le suivi.
+- **Revenir au ciel de Cagnac** arrête le suivi. Si le vol n'a pas encore atterri, il passe dans **Suivis mis de côté**, d'où tu peux le **Reprendre** (avec sa trace) ou le **Retirer**. Ces vols disparaissent seuls après leur date de fin ou au bout de 48 h.
 - **Actualiser maintenant** relance une mise à jour.
 
 Mise en route, une seule fois :
@@ -138,5 +140,5 @@ Pour rafraîchir ces données (rarement utile) : **Actions → Préparer les don
 ## Fichiers
 
 - `scripts/radar.mjs` : la collecte (zone et suivi) ; `scripts/types.mjs` : noms lisibles des types d'avions ; `scripts/geo.mjs` : « Survole … » ; `scripts/build-geo.mjs` : préparation du dossier `geo/`.
-- `.github/workflows/` : *Actualiser le radar*, *Suivre un vol*, *Arrêter le suivi*, *Préparer les données géographiques* et `_radar.yml` (étapes communes, ne pas lancer directement).
+- `.github/workflows/` : *Actualiser le radar*, *Suivre un vol*, *Arrêter le suivi*, *Préparer les données géographiques*, *Oublier un vol* et `_radar.yml` (étapes communes, ne pas lancer directement).
 - `trmnl/` : gabarits à coller dans TRMNL. Ils sont générés à partir de `trmnl/src/body.liquid` : ne modifie pas les quatre fichiers de taille à la main.
