@@ -354,6 +354,7 @@ const out = {
   updated_txt: hm(NOW),
   place: CONFIG.lieu, place_short: CONFIG.lieu_court || CONFIG.lieu,
   radius_km: CONFIG.rayon_km,
+  home_lat: CONFIG.latitude, home_lon: CONFIG.longitude,
   mode: track ? "suivi" : "zone"
 };
 
