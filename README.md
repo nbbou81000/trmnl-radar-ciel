@@ -6,6 +6,8 @@ Affiche sur un TRMNL les avions qui survolent Cagnac-les-Mines (rayon de 30 km),
 - **Trois styles**, au choix dans les réglages du plugin : Classique, LED et Flip-flap.
 - **Carte du suivi** (option) : la position de l'avion, sa trajectoire parcourue et le trajet restant, sur les cartes TRMNL (MapLibre + tuiles OpenStreetMap).
 - **Ce que survole l'avion** en mode suivi : ville proche, pays, mer ou océan.
+- **Fiche détaillée** (option) : aéroports complets, distance, décollage estimé, arrivée prévue ; modèle exact, immatriculation, exploitant, photo ; vitesse air, Mach, vent (de face ou arrière), température extérieure, transpondeur.
+- **Quatre styles de carte** : Contours, Rues, Minimal, Épuré.
 - **Unités** : mètres, km/h, m/s.
 - **Données** : position ADS-B via [adsb.lol](https://adsb.lol) (ODbL), routes et compagnies via [adsbdb.com](https://www.adsbdb.com). Tout est gratuit et sans clé.
 
@@ -17,6 +19,8 @@ Affiche sur un TRMNL les avions qui survolent Cagnac-les-Mines (rayon de 30 km),
 | Carte du suivi | Long-courrier |
 |---|---|
 | ![](docs/apercus/suivi-carte.png) | ![](docs/apercus/suivi-carte-long-courrier.png) |
+| **Fiche détaillée** | **Carte « Minimal »** |
+| ![](docs/apercus/suivi-fiche.png) | ![](docs/apercus/carte-minimal.png) |
 
 ## Comment ça marche
 
@@ -58,7 +62,7 @@ La branche `data` est réécrite à chaque passage (un seul commit), donc l'hist
 2. Strategy : **Polling**. Polling URL :
    `https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/flights.json`
 3. Refresh rate : le plus court proposé (5 minutes). Règle aussi l'intervalle de rafraîchissement de l'appareil sur 5 minutes.
-4. **Form fields** : colle le contenu de `trmnl/custom-fields.yml`. Deux réglages apparaissent alors dans le plugin : le style d'affichage, et l'écran pendant un suivi (tableau ou carte).
+4. **Form fields** : colle le contenu de `trmnl/custom-fields.yml`. Trois réglages apparaissent alors dans le plugin : le style d'affichage, l'écran pendant un suivi (tableau, carte ou fiche détaillée) et le style de la carte.
 5. **Edit Markup** : colle chaque fichier dans l'onglet correspondant.
    - `trmnl/shared.liquid` → Shared
    - `trmnl/full.liquid` → Full
@@ -110,7 +114,8 @@ Pour rafraîchir ces données (rarement utile) : **Actions → Préparer les don
 ## Limites
 
 - **Pas de temps réel** : l'écran montre le ciel au dernier rafraîchissement, soit 5 minutes au mieux, et non à 10 secondes près comme un panneau LED.
-- **Routes indicatives** : adsbdb donne la route habituelle d'un indicatif, qui peut être fausse pour un vol exceptionnel ou affrété.
+- **Routes indicatives** : adsbdb donne la route habituelle d'un indicatif, qui peut être fausse pour un vol exceptionnel ou affrété. Quand l'avion s'écarte nettement du trajet prévu, l'écran l'indique (« route incertaine »).
+- **Fiche détaillée** : affichée en plein écran et en demi-écran vertical ; dans les vues plus petites, c'est le tableau de suivi qui s'affiche. La photo de l'appareil vient d'airport-data.com quand elle existe.
 - **Carte** : elle n'existe qu'en mode suivi. Le framework TRMNL attend jusqu'à 6 secondes le chargement des tuiles ; si leur serveur est lent, la carte peut rester incomplète jusqu'au rafraîchissement suivant.
 - **Styles LED et flip-flap** : ils utilisent leur propre CSS (`<style>` dans *Shared*) et les polices Google Doto et Oswald. Ça ne gêne pas un plugin privé, mais le linter Chef le signalera si un jour tu en fais une recette publique.
 

@@ -11,8 +11,20 @@
 - keyname: suivi_affichage
   field_type: select
   name: Écran pendant le suivi d'un vol
-  description: Tableau de suivi (dans le style choisi) ou carte avec la position de l'avion et sa trajectoire.
+  description: Tableau de suivi (dans le style choisi), carte avec la position de l'avion, ou fiche détaillée du vol et de l'appareil.
   options:
   - "Tableau de suivi: tableau"
   - "Carte: carte"
+  - "Fiche détaillée: fiche"
   default: tableau
+
+- keyname: style_carte
+  field_type: select
+  name: Style de la carte
+  description: Contours (côtes et frontières), Rues (routes, villes et détails), Minimal (terre, eau et grands axes) ou Épuré (fond blanc, seulement le trajet).
+  options:
+  - "Contours: outline"
+  - "Rues: streets"
+  - "Minimal: minimal"
+  - "Épuré: blank"
+  default: outline

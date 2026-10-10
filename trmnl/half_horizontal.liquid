@@ -7,10 +7,77 @@
 {%- assign t = track -%}
 {%- assign total_n = total | default: 0 -%}
 {%- assign vue_raw = trmnl.plugin_settings.custom_fields_values.suivi_affichage | default: suivi_affichage | default: "tableau" | downcase -%}
-{%- if vue_raw contains "carte" -%}{%- assign vue = "carte" -%}{%- else -%}{%- assign vue = "tableau" -%}{%- endif -%}
+{%- if vue_raw contains "carte" -%}{%- assign vue = "carte" -%}{%- elsif vue_raw contains "fiche" -%}{%- assign vue = "fiche" -%}{%- else -%}{%- assign vue = "tableau" -%}{%- endif -%}
+{%- assign carte_raw = trmnl.plugin_settings.custom_fields_values.style_carte | default: style_carte | default: "outline" | downcase -%}
+{%- if carte_raw contains "street" or carte_raw contains "rue" -%}{%- assign preset = "streets" -%}{%- elsif carte_raw contains "minimal" -%}{%- assign preset = "minimal" -%}{%- elsif carte_raw contains "blank" or carte_raw contains "pur" -%}{%- assign preset = "blank" -%}{%- else -%}{%- assign preset = "outline" -%}{%- endif -%}
+{%- assign dd = t.d -%}
 {%- capture title_line -%}{% if mode == "suivi" %}Suivi {{ t.flight }}{% else %}{{ place_short }} · {{ total_n }} avion{% if total_n > 1 %}s{% endif %} à {{ radius_km }} km{% endif %} · {{ updated_txt }}{% if stale %} (ancien){% endif %}{%- endcapture -%}
 
-{%- if mode == "suivi" and vue == "carte" -%}
+{%- if mode == "suivi" and vue == "fiche" and dd and short != true -%}
+{%- comment -%} ===================== FICHE DÉTAILLÉE DU VOL ===================== {%- endcomment -%}
+<div class="layout layout--col layout--top layout--stretch-x gap">
+  <div class="flex flex--row flex--between flex--center-y w--full">
+    <div class="flex flex--col">
+      <span class="value {% if narrow %}value--small{% else %}value--medium{% endif %}">{{ t.flight }}{% if t.has_route %} · {{ t.from }} – {{ t.to }}{% endif %}</span>
+      <span class="label" data-clamp="1">{{ dd.airline }}{% if dd.callsign != "" %} · {{ dd.callsign }}{% endif %}</span>
+    </div>
+    <div class="flex flex--col text--right flex--right">
+      <span class="label label--inverted">{% if dd.emergency %}URGENCE {{ dd.squawk_txt }}{% else %}{{ t.status_txt }}{% endif %}</span>
+      {% if t.route_doubt %}<span class="label label--small">route incertaine</span>{% elsif t.progress_pct != nil %}<span class="label label--small">{{ t.progress_pct }} % du trajet</span>{% endif %}
+    </div>
+  </div>
+  <div class="divider"></div>
+  <div class="grid grid--cols-{% if narrow %}1{% else %}3{% endif %} gap--medium w--full">
+    <div class="flex flex--col gap--small">
+      <span class="title title--small">Vol</span>
+      <table class="table table--xsmall" data-table-limit="true"><tbody>
+        {%- if t.has_route -%}
+        <tr><td><span class="label label--small">Départ</span></td><td><span class="label label--small" data-clamp="2">{{ dd.from_name | default: t.from_city }}{% if dd.from_country != "" %} ({{ dd.from_country }}){% endif %}</span></td></tr>
+        <tr><td><span class="label label--small">Arrivée</span></td><td><span class="label label--small" data-clamp="2">{{ dd.to_name | default: t.to_city }}{% if dd.to_country != "" %} ({{ dd.to_country }}){% endif %}</span></td></tr>
+        {%- endif -%}
+        {%- if dd.dist_total_txt and dd.dist_total_txt != "" -%}<tr><td><span class="label label--small">Distance</span></td><td><span class="label label--small">{{ dd.dist_total_txt }} km</span></td></tr>{%- endif -%}
+        {%- if dd.takeoff_txt and dd.takeoff_txt != "" -%}<tr><td><span class="label label--small">Décollage</span></td><td><span class="label label--small">vers {{ dd.takeoff_txt }}{% if dd.elapsed_txt != "" %} ({{ dd.elapsed_txt }}){% endif %}</span></td></tr>{%- endif -%}
+        {%- if t.eta_txt != "" -%}<tr><td><span class="label label--small">Arrivée prévue</span></td><td><span class="label label--small">vers {{ t.eta_txt }}{% if dd.remaining_time_txt != "" %} (dans {{ dd.remaining_time_txt }}){% endif %}</span></td></tr>{%- endif -%}
+        {%- if t.remaining_km and t.remaining_km > 0 -%}<tr><td><span class="label label--small">Reste</span></td><td><span class="label label--small">{{ t.remaining_txt }} km</span></td></tr>{%- endif -%}
+      </tbody></table>
+    </div>
+    <div class="flex flex--col gap--small">
+      <span class="title title--small">Appareil</span>
+      <table class="table table--xsmall" data-table-limit="true"><tbody>
+        {%- if dd.model and dd.model != "" -%}<tr><td><span class="label label--small">Modèle</span></td><td><span class="label label--small" data-clamp="2">{{ dd.model }}</span></td></tr>{%- endif -%}
+        {%- if dd.reg and dd.reg != "" -%}<tr><td><span class="label label--small">Immatriculation</span></td><td><span class="label label--small">{{ dd.reg }}</span></td></tr>{%- endif -%}
+        {%- if dd.owner and dd.owner != "" -%}<tr><td><span class="label label--small">Exploitant</span></td><td><span class="label label--small" data-clamp="2">{{ dd.owner }}{% if dd.owner_country != "" %} ({{ dd.owner_country }}){% endif %}</span></td></tr>{%- endif -%}
+        {%- if dd.category and dd.category != "" -%}<tr><td><span class="label label--small">Catégorie</span></td><td><span class="label label--small">{{ dd.category }}</span></td></tr>{%- endif -%}
+        {%- if dd.hex and dd.hex != "" -%}<tr><td><span class="label label--small">Code Mode S</span></td><td><span class="label label--small">{{ dd.hex }}</span></td></tr>{%- endif -%}
+      </tbody></table>
+      {%- if dd.photo and dd.photo != "" and narrow != true -%}
+      <img class="image image-dither image--cover w--full h--[90px] rounded--small" src="{{ dd.photo }}">
+      {%- endif -%}
+    </div>
+    {%- unless narrow -%}
+    <div class="flex flex--col gap--small">
+      <span class="title title--small">En ce moment</span>
+      <table class="table table--xsmall" data-table-limit="true"><tbody>
+        {%- if t.over_txt and t.over_txt != "" -%}<tr><td><span class="label label--small">Survole</span></td><td><span class="label label--small" data-clamp="2">{{ t.over_txt }}</span></td></tr>{%- endif -%}
+        <tr><td><span class="label label--small">Altitude</span></td><td><span class="label label--small">{{ t.alt_txt }} m{% if dd.alt_sel_txt != "" %} (visée {{ dd.alt_sel_txt }}){% endif %}</span></td></tr>
+        <tr><td><span class="label label--small">Vitesse sol</span></td><td><span class="label label--small">{{ t.speed_txt }} km/h{% if dd.mach_txt != "" %} · Mach {{ dd.mach_txt }}{% endif %}</span></td></tr>
+        {%- if dd.tas_txt and dd.tas_txt != "" -%}<tr><td><span class="label label--small">Vitesse air</span></td><td><span class="label label--small">{{ dd.tas_txt }} km/h</span></td></tr>{%- endif -%}
+        {%- if dd.wind_txt and dd.wind_txt != "" -%}<tr><td><span class="label label--small">Vent</span></td><td><span class="label label--small" data-clamp="2">{{ dd.wind_txt }}, {{ dd.wind_effect_txt }}</span></td></tr>{%- endif -%}
+        {%- if dd.oat_txt and dd.oat_txt != "" -%}<tr><td><span class="label label--small">Température ext.</span></td><td><span class="label label--small">{{ dd.oat_txt }}</span></td></tr>{%- endif -%}
+        <tr><td><span class="label label--small">Cap · vario</span></td><td><span class="label label--small">{{ t.track_txt }}° · {{ t.vr_txt }} m/s</span></td></tr>
+        {%- if dd.squawk_txt and dd.squawk_txt != "" -%}<tr><td><span class="label label--small">Transpondeur</span></td><td><span class="label label--small">{{ dd.squawk_txt }}</span></td></tr>{%- endif -%}
+      </tbody></table>
+    </div>
+    {%- endunless -%}
+  </div>
+</div>
+<div class="title_bar">
+  <img class="image image-stroke" src="data:image/svg+xml;base64,{{ svg_logo | base64_encode }}" />
+  <span class="title">Radar du ciel</span>
+  <span class="instance">{% if dd.photo and dd.photo != "" and narrow != true %}Photo : airport-data.com · {% endif %}{{ title_line }}</span>
+</div>
+
+{%- elsif mode == "suivi" and vue == "carte" -%}
 {%- comment -%} ===================== CARTE DU SUIVI (MapLibre + tuiles TRMNL) ===================== {%- endcomment -%}
 <script src="https://trmnl.com/js/maplibre-gl/5.24.0/maplibre-gl.js"></script>
 <link href="https://trmnl.com/js/maplibre-gl/5.24.0/maplibre-gl.css" rel="stylesheet">
@@ -88,7 +155,7 @@
   }
   whenReady(function () {
     TRMNLMaps.watch(el, function () {
-      var map = new maplibregl.Map(TRMNLMaps.options({ el: el, preset: "outline" }));
+      var map = new maplibregl.Map(TRMNLMaps.options({ el: el, preset: "{{ preset }}" }));
       map.on("load", function () {
         if (todo.length > 1) TRMNLMaps.route(map, todo, { el: el, id: "todo", i: done.length > 1 ? 1 : 0, n: 2 });
         if (done.length > 1) TRMNLMaps.route(map, done, { el: el, id: "done", i: 0, n: 2 });
@@ -218,6 +285,7 @@
   <span class="label text--center">{% if t.status == "attente" %}Le vol apparaîtra dès que son transpondeur émettra{% else %}Route inconnue{% endif %}</span>
   {%- endif -%}
   {%- if t.over_txt and t.over_txt != "" -%}<span class="label text--center" data-clamp="1">Survole : {{ t.over_txt }}</span>{%- endif -%}
+  {%- if t.route_doubt -%}<span class="label label--small text--center">Route incertaine : l'avion s'écarte du trajet prévu</span>{%- endif -%}
   {%- unless short or t.status == "attente" -%}
   <div class="divider"></div>
   <div class="grid grid--cols-{% if narrow %}2{% else %}4{% endif %}">

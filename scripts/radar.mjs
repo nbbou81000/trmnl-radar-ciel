@@ -73,6 +73,9 @@ async function lookupRoute(callsign) {
     from: fr.origin?.iata_code || fr.origin?.icao_code || null,
     from_city: cleanCity(fr.origin?.municipality) || fr.origin?.name || null,
     from_name: fr.origin?.name || null,
+    from_icao: fr.origin?.icao_code || null, from_cc: fr.origin?.country_iso_name || null,
+    to_icao: fr.destination?.icao_code || null, to_cc: fr.destination?.country_iso_name || null,
+    airline_icao: fr.airline?.icao || null, airline_cc: fr.airline?.country_iso || null,
     from_lat: fr.origin?.latitude, from_lon: fr.origin?.longitude,
     to: fr.destination?.iata_code || fr.destination?.icao_code || null,
     to_city: cleanCity(fr.destination?.municipality) || fr.destination?.name || null,
@@ -84,14 +87,28 @@ async function lookupRoute(callsign) {
 }
 async function lookupAircraft(hex) {
   if (!hex || hex.startsWith("~")) return null;
-  if (hex in cache.aircraft) return cache.aircraft[hex];
+  const c = cache.aircraft[hex];
+  if (c === null || (c && c.v === 2)) return c;
   const j = await getJson(`https://api.adsbdb.com/v0/aircraft/${hex}`);
-  if (j === undefined) return null;
+  if (j === undefined) return c || null;
   const a = j?.response?.aircraft;
-  const info = a ? { owner: a.registered_owner || null, maker: a.manufacturer || null } : null;
+  const info = a ? {
+    v: 2, owner: a.registered_owner || null, maker: a.manufacturer || null, model: a.type || null,
+    owner_cc: a.registered_owner_country_iso_name || null,
+    photo: a.url_photo || null, photo_thumb: a.url_photo_thumbnail || null
+  } : null;
   cache.aircraft[hex] = info;
   return info;
 }
+
+// ---------- libellés ----------
+const regionFr = (() => { try { return new Intl.DisplayNames(["fr"], { type: "region" }); } catch { return null; } })();
+const countryFr = cc => { if (!cc) return ""; try { return regionFr?.of(cc.toUpperCase()) || cc; } catch { return cc; } };
+const CATEGORIES = { A1: "Avion léger", A2: "Petit avion", A3: "Avion de ligne moyen", A4: "Gros porteur (B757)", A5: "Gros porteur",
+  A6: "Haute performance", A7: "Hélicoptère", B1: "Planeur", B2: "Ballon / dirigeable", B4: "ULM", B6: "Drone", C1: "Véhicule d'urgence", C2: "Véhicule de service" };
+const SQUAWKS = { "7500": "détournement", "7600": "panne radio", "7700": "urgence" };
+const dur = min => { if (!Number.isFinite(min) || min < 0) return ""; const h = Math.floor(min / 60), m = Math.round(min % 60); return h ? `${h} h ${String(m).padStart(2, "0")}` : `${m} min`; };
+const cardinal = deg => ["N", "NE", "E", "SE", "S", "SO", "O", "NO"][Math.round(((deg % 360) + 360) % 360 / 45) % 8];
 
 // ---------- mise en forme d'un avion ----------
 async function describe(ac) {
@@ -131,7 +148,7 @@ async function describe(ac) {
     vr_txt: vrTxt,
     vr_dir: vr === null ? "inconnu" : vr > 0 ? "montee" : vr < 0 ? "descente" : "palier",
     lat: ac.lat, lon: ac.lon,
-    _route: route
+    _route: route, _ac: ac, _owner: owner
   };
   return o;
 }
@@ -168,7 +185,7 @@ async function zone() {
     f.dist_km = Math.round(d);
     f.flap = flapZone(f);
     f.flap_short = flapZoneShort(f);
-    delete f._route;
+    delete f._route; delete f._ac; delete f._owner;
     flights.push(f);
   }
   return { ok: true, total: list.length, flights };
@@ -252,6 +269,9 @@ async function trackScreen() {
     const rem = haversine(pos.lat, pos.lon, route.to_lat, route.to_lon);
     pct = Math.max(0, Math.min(100, Math.round(100 * done / (done + rem || 1))));
     remaining = Math.round(rem);
+    // Route connue mais avion loin du trajet direct : la route d'adsbdb est sans doute périmée
+    const total = haversine(route.from_lat, route.from_lon, route.to_lat, route.to_lon);
+    t.route_doubt = status === "en_vol" && done + rem > total * 1.35 + 150;
     if (status === "signal_perdu" && rem < 40) status = "atterri";
     if (status === "en_vol" && f.speed_kmh > 150) eta = hm(new Date(NOW.getTime() + (rem / f.speed_kmh) * 3600e3 + 8 * 60e3));
   }
@@ -321,7 +341,53 @@ async function trackScreen() {
   t.map_heading = f && Number.isFinite(f.track_deg) ? f.track_deg : 0;
   t.has_map = !!(posU || (fromU && toU));
 
-  if (f) track.last = { lat: f.lat, lon: f.lon, seen: NOW.toISOString(), type: f.type, reg: f.reg };
+  // Fiche détaillée
+  // Heure de décollage estimée : à la première détection en vol, on retranche
+  // le temps qu'il a fallu pour parcourir la distance déjà faite.
+  if (status === "en_vol" && !track.airborne_since) {
+    const doneKm = A && pos ? haversine(A.lat, A.lon, pos.lat, pos.lon) : 0;
+    const back = doneKm > 30 ? (doneKm / Math.max(f.speed_kmh || 0, 400)) * 60 + 10 : 0;
+    track.airborne_since = new Date(NOW.getTime() - back * 60e3).toISOString();
+  }
+  const raw = f?._ac || null, own = f?._owner || track.last?.owner || null;
+  const dTotal = A && B ? haversine(A.lat, A.lon, B.lat, B.lon) : null;
+  const elapsed = track.airborne_since ? (NOW - new Date(track.airborne_since)) / 60e3 : null;
+  const remainMin = status === "en_vol" && remaining !== null && f.speed_kmh > 150 ? remaining / f.speed_kmh * 60 + 8 : null;
+  let wind = "", windEffect = "";
+  if (raw && Number.isFinite(raw.wd) && Number.isFinite(raw.ws) && Number.isFinite(raw.track)) {
+    const wsK = Math.round(raw.ws * KT_TO_KMH);
+    wind = `${wsK} km/h du ${cardinal(raw.wd)}`;
+    const comp = Math.round(-raw.ws * KT_TO_KMH * Math.cos((raw.wd - raw.track) * Math.PI / 180));
+    windEffect = comp > 5 ? `vent arrière ${comp} km/h` : comp < -5 ? `vent de face ${-comp} km/h` : "vent de travers";
+  }
+  const squawk = raw?.squawk || "";
+  t.d = {
+    airline: t.airline, airline_country: countryFr(route?.airline_cc),
+    flight_iata: route?.callsign_iata || "", callsign: f?.callsign || route?.callsign_icao || "",
+    from_name: route?.from_name || "", from_country: countryFr(route?.from_cc), from_icao: route?.from_icao || "",
+    to_name: route?.to_name || "", to_country: countryFr(route?.to_cc), to_icao: route?.to_icao || "",
+    dist_total_txt: dTotal ? thousands(dTotal) : "",
+    elapsed_txt: status === "en_vol" || status === "signal_perdu" ? dur(Math.max(elapsed, 1)) : "",
+    takeoff_txt: track.airborne_since ? hm(new Date(track.airborne_since)) : "",
+    remaining_time_txt: remainMin ? dur(remainMin) : "",
+    model: own?.maker && own?.model ? `${own.maker} ${own.model}` : (t.type || ""),
+    type_name: t.type, type_code: f?.type_code || "",
+    reg: t.reg, hex: raw?.hex ? raw.hex.toUpperCase() : "",
+    owner: own?.owner && !/^private$/i.test(own.owner) ? own.owner : (own?.owner ? "Privé" : ""),
+    owner_country: countryFr(own?.owner_cc),
+    category: raw?.category ? (CATEGORIES[raw.category] || raw.category) : "",
+    photo: own?.photo || own?.photo_thumb || "",
+    tas_txt: Number.isFinite(raw?.tas) ? String(Math.round(raw.tas * KT_TO_KMH)) : "",
+    mach_txt: Number.isFinite(raw?.mach) ? raw.mach.toFixed(2).replace(".", ",") : "",
+    oat_txt: Number.isFinite(raw?.oat) ? `${Math.round(raw.oat)} °C` : "",
+    wind_txt: wind, wind_effect_txt: windEffect,
+    alt_sel_txt: Number.isFinite(raw?.nav_altitude_mcp) ? thousands(raw.nav_altitude_mcp * FT_TO_M) : "",
+    squawk_txt: squawk ? `${squawk}${SQUAWKS[squawk] ? ` (${SQUAWKS[squawk]})` : ""}` : "",
+    emergency: !!(SQUAWKS[squawk] || (raw?.emergency && raw.emergency !== "none"))
+  };
+  if (f) { delete f._ac; delete f._owner; }
+
+  if (f) track.last = { lat: f.lat, lon: f.lon, seen: NOW.toISOString(), type: f.type, reg: f.reg, owner: own };
   return t;
 }
 
