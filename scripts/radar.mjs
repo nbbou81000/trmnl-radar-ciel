@@ -51,7 +51,7 @@ async function getJson(url, tries = 2) {
     }
   }
 }
-const hm = d => new Intl.DateTimeFormat("fr-FR", { timeZone: TZ, hour: "2-digit", minute: "2-digit" }).format(d);
+const hm = d => (d instanceof Date && !isNaN(d)) ? new Intl.DateTimeFormat("fr-FR", { timeZone: TZ, hour: "2-digit", minute: "2-digit" }).format(d) : "";
 const thousands = n => String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, " ");
 const ascii = s => String(s ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").toUpperCase();
 function haversine(lat1, lon1, lat2, lon2) {
@@ -267,7 +267,7 @@ async function trackScreen() {
   // Progression
   let pos = f ? { lat: f.lat, lon: f.lon } : track.last?.lat ? { lat: track.last.lat, lon: track.last.lon } : null;
   let pct = null, remaining = null, eta = null;
-  if (t.has_route && Number.isFinite(route.from_lat) && Number.isFinite(route.to_lat) && pos) {
+  if (t.has_route && [route.from_lat, route.from_lon, route.to_lat, route.to_lon].every(Number.isFinite) && pos && Number.isFinite(pos.lat) && Number.isFinite(pos.lon)) {
     const done = haversine(route.from_lat, route.from_lon, pos.lat, pos.lon);
     const rem = haversine(pos.lat, pos.lon, route.to_lat, route.to_lon);
     pct = Math.max(0, Math.min(100, Math.round(100 * done / (done + rem || 1))));
@@ -318,8 +318,8 @@ async function trackScreen() {
   }
 
   // Données de la carte
-  const A = t.has_route && Number.isFinite(route.from_lat) ? { lat: route.from_lat, lon: route.from_lon } : null;
-  const B = t.has_route && Number.isFinite(route.to_lat) ? { lat: route.to_lat, lon: route.to_lon } : null;
+  const A = t.has_route && Number.isFinite(route.from_lat) && Number.isFinite(route.from_lon) ? { lat: route.from_lat, lon: route.from_lon } : null;
+  const B = t.has_route && Number.isFinite(route.to_lat) && Number.isFinite(route.to_lon) ? { lat: route.to_lat, lon: route.to_lon } : null;
   let done = [], todo = [];
   const trail = track.trail.map(([lon, lat]) => [lon, lat]);
   if (status === "attente" || status === "au_sol") {
