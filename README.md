@@ -74,7 +74,20 @@ La branche `data` est réécrite à chaque passage (un seul commit), donc l'hist
    - `trmnl/quadrant.liquid` → Quadrant
 6. Enregistre, puis ajoute le plugin à la playlist de ton TRMNL.
 
-## Suivre un vol
+## Télécommande (page web)
+
+Plutôt que de passer par l'onglet Actions, utilise la page **https://nbbou81000.github.io/trmnl-radar-ciel/** sur ton téléphone. Ajoute-la à l'écran d'accueil pour l'ouvrir comme une appli.
+
+- Elle montre ce qu'affiche le radar en ce moment.
+- Tape un vol : elle vérifie la route (« Air France AF6125 : Toulouse → Paris ») avant que tu valides avec **Suivre ce vol**.
+- **Revenir au ciel de Cagnac** arrête le suivi.
+- **Actualiser maintenant** relance une mise à jour.
+
+Mise en route, une seule fois :
+1. Dans le dépôt : **Settings → Pages**. Source : *Deploy from a branch*, branche `main`, dossier `/docs`, puis **Save**.
+2. Ouvre la page, déplie **Réglage du jeton GitHub** et colle un jeton *fine-grained* limité à ce dépôt, avec la permission **Actions : Read and write** (le même que pour cron-job.org convient). Le jeton reste dans le navigateur du téléphone, il n'est envoyé qu'à GitHub.
+
+## Suivre un vol (depuis GitHub)
 
 1. Onglet **Actions** → **Suivre un vol** → **Run workflow**.
 2. Dans la case **vol**, saisis au choix :

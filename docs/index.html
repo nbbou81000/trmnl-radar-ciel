@@ -1,0 +1,312 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Radar">
+<title>Radar du ciel</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='5' fill='%23F2C200'/%3E%3Cpath d='M12 3.5c.7 0 1.2.6 1.2 1.4V10l6.3 3.7v1.9l-6.3-2v3.9l2 1.5v1.6L12 19.8l-3.2.8V19l2-1.5v-3.9l-6.3 2v-1.9l6.3-3.7V4.9c0-.8.5-1.4 1.2-1.4z' fill='%23000'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Doto:wght@800&family=Oswald:wght@400;600&family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #EEEFEC;
+    --ink: #000;
+    --sign: #F2C200;
+    --muted: #5B5E62;
+    --line: #C9CBC6;
+    --ok: #1F7A3A;
+    --err: #B3261E;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0; background: var(--paper); color: var(--ink);
+    font: 400 17px/1.45 "Atkinson Hyperlegible", system-ui, sans-serif;
+    padding: env(safe-area-inset-top) 0 calc(env(safe-area-inset-bottom) + 32px);
+  }
+  main { max-width: 34rem; margin: 0 auto; padding: 0 18px; }
+  h1, h2 { font-family: "Oswald", sans-serif; font-weight: 600; letter-spacing: .02em; margin: 0; }
+  a { color: inherit; }
+
+  /* L'écran : ce que montre le TRMNL en ce moment */
+  .screen {
+    margin: 18px 0 26px; background: #000; color: #fff; border-radius: 14px;
+    padding: 16px 18px 14px; font-family: "Doto", ui-monospace, monospace; font-weight: 800;
+    text-transform: uppercase; line-height: 1.05; position: relative; min-height: 132px;
+  }
+  .screen .top { display: flex; justify-content: space-between; font-size: 15px; padding-bottom: 10px; border-bottom: 2px dotted #fff; }
+  .screen .big { font-size: 34px; margin-top: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .screen .sub { font-size: 15px; margin-top: 8px; min-height: 1em; }
+  .screen.loading .big { opacity: .4; }
+
+  /* Le champ vol, façon rangée de palettes */
+  label.field { display: block; font-family: "Oswald", sans-serif; font-size: 17px; margin-bottom: 8px; }
+  .flight {
+    width: 100%; border: 0; border-radius: 10px; background: #000; color: #fff;
+    font: 600 40px/1 "Oswald", sans-serif; letter-spacing: .32em; text-transform: uppercase;
+    padding: 16px 14px 14px 18px; caret-color: var(--sign);
+    background-image: linear-gradient(to bottom, transparent calc(50% - 1px), #2a2a2a calc(50% - 1px), #2a2a2a calc(50% + 1px), transparent calc(50% + 1px));
+  }
+  .flight::placeholder { color: #555; }
+  .flight:focus { outline: 3px solid var(--sign); outline-offset: 3px; }
+  .hint { color: var(--muted); font-size: 15px; margin: 8px 2px 0; min-height: 1.45em; }
+  .hint.found { color: var(--ink); }
+  .hint.found b { font-family: "Oswald", sans-serif; font-weight: 600; font-size: 17px; letter-spacing: .02em; }
+
+  details.more { margin-top: 14px; }
+  details.more summary { cursor: pointer; color: var(--muted); font-size: 15px; }
+  details.more input[type=date] { margin-top: 8px; font: inherit; padding: 8px 10px; border: 1.5px solid var(--line); border-radius: 8px; background: #fff; }
+
+  /* Boutons : le principal reprend la signalétique aéroport, noir sur jaune */
+  .actions { display: grid; gap: 12px; margin-top: 22px; }
+  button {
+    font: 600 20px/1 "Oswald", sans-serif; letter-spacing: .02em; border-radius: 10px;
+    padding: 18px 16px; cursor: pointer; border: 2px solid #000; width: 100%;
+  }
+  button:focus-visible { outline: 3px solid #000; outline-offset: 3px; }
+  .go { background: var(--sign); color: #000; }
+  .home { background: transparent; color: #000; }
+  .quiet { background: none; border: 0; padding: 10px 0; font: 400 16px/1.2 "Atkinson Hyperlegible", sans-serif; text-decoration: underline; width: auto; justify-self: start; }
+  button[disabled] { opacity: .5; cursor: progress; }
+
+  .status { margin: 16px 2px 0; font-size: 16px; min-height: 1.45em; }
+  .status.ok { color: var(--ok); }
+  .status.err { color: var(--err); }
+
+  section.runs { margin-top: 30px; border-top: 1.5px solid var(--line); padding-top: 16px; }
+  section.runs h2 { font-size: 18px; margin-bottom: 8px; }
+  .runs ul { list-style: none; margin: 0; padding: 0; }
+  .runs li { display: flex; justify-content: space-between; gap: 12px; padding: 7px 0; border-bottom: 1px solid var(--line); font-size: 15px; }
+  .runs li span:last-child { color: var(--muted); white-space: nowrap; }
+
+  details.setup { margin-top: 30px; border-top: 1.5px solid var(--line); padding-top: 16px; }
+  details.setup summary { cursor: pointer; font-family: "Oswald", sans-serif; font-size: 18px; font-weight: 600; }
+  details.setup ol { padding-left: 20px; margin: 12px 0; }
+  details.setup li { margin-bottom: 6px; }
+  details.setup input { width: 100%; font: 15px/1.3 ui-monospace, monospace; padding: 12px; border: 1.5px solid var(--line); border-radius: 8px; background: #fff; }
+  .row { display: flex; gap: 10px; margin-top: 10px; }
+  .row button { font-size: 17px; padding: 12px; }
+  .small { font-size: 14px; color: var(--muted); }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .screen.loading .big { animation: blink 1s steps(2) infinite; }
+    @keyframes blink { 50% { opacity: .15; } }
+  }
+</style>
+</head>
+<body>
+<main>
+  <div class="screen loading" id="screen" aria-live="polite">
+    <div class="top"><span id="s-mode">Radar du ciel</span><span id="s-time">--:--</span></div>
+    <div class="big" id="s-big">Lecture…</div>
+    <div class="sub" id="s-sub"></div>
+  </div>
+
+  <form id="follow" autocomplete="off">
+    <label class="field" for="flight">Vol à suivre</label>
+    <input class="flight" id="flight" name="flight" inputmode="text" autocapitalize="characters" spellcheck="false"
+           maxlength="10" placeholder="AF6125" aria-describedby="hint">
+    <p class="hint" id="hint">Numéro de vol, indicatif (AFR6125) ou immatriculation (F-HPNA).</p>
+    <details class="more">
+      <summary>Arrêter le suivi à une date précise</summary>
+      <input type="date" id="until" aria-label="Date de fin du suivi">
+    </details>
+    <div class="actions">
+      <button type="submit" class="go" id="btn-follow">Suivre ce vol</button>
+      <button type="button" class="home" id="btn-home">Revenir au ciel de Cagnac</button>
+      <button type="button" class="quiet" id="btn-refresh">Actualiser maintenant</button>
+    </div>
+    <p class="status" id="status" role="status"></p>
+  </form>
+
+  <section class="runs" id="runs" hidden>
+    <h2>Dernières demandes</h2>
+    <ul id="runs-list"></ul>
+  </section>
+
+  <details class="setup" id="setup">
+    <summary>Réglage du jeton GitHub</summary>
+    <p>Cette page déclenche les workflows du dépôt à ta place. Elle a besoin d'un jeton GitHub, enregistré seulement dans ce navigateur.</p>
+    <ol>
+      <li>Ouvre <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">la création de jeton</a> sur GitHub.</li>
+      <li>Repository access : <i>Only select repositories</i> → <code>trmnl-radar-ciel</code>.</li>
+      <li>Permissions : <b>Actions</b> → <i>Read and write</i>.</li>
+      <li>Génère le jeton et colle-le ici. Le même jeton que pour cron-job.org convient.</li>
+    </ol>
+    <input type="password" id="token" placeholder="github_pat_…" aria-label="Jeton GitHub">
+    <div class="row">
+      <button type="button" class="go" id="btn-save">Enregistrer</button>
+      <button type="button" class="home" id="btn-forget">Oublier</button>
+    </div>
+    <p class="small" id="token-state"></p>
+  </details>
+</main>
+
+<script>
+(function () {
+  var OWNER = "nbbou81000", REPO = "trmnl-radar-ciel";
+  var API = "https://api.github.com/repos/" + OWNER + "/" + REPO;
+  var RAW = "https://raw.githubusercontent.com/" + OWNER + "/" + REPO + "/data/flights.json";
+  var KEY = "radar-ciel-token";
+  var $ = function (id) { return document.getElementById(id); };
+
+  function getToken() { try { return localStorage.getItem(KEY) || ""; } catch (e) { return ""; } }
+  function setToken(v) { try { v ? localStorage.setItem(KEY, v) : localStorage.removeItem(KEY); } catch (e) {} }
+  function headers() { return { "Authorization": "Bearer " + getToken(), "Accept": "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28" }; }
+  function say(msg, kind) { var s = $("status"); s.textContent = msg; s.className = "status" + (kind ? " " + kind : ""); }
+  function busy(on) { ["btn-follow", "btn-home", "btn-refresh"].forEach(function (id) { $(id).disabled = on; }); }
+
+  function showTokenState() {
+    var has = !!getToken();
+    $("token-state").textContent = has ? "Jeton enregistré dans ce navigateur." : "Aucun jeton enregistré : les boutons ne fonctionneront pas.";
+    if (!has) $("setup").open = true;
+  }
+
+  // ---- L'écran actuel ----
+  function readData() {
+    if (getToken()) {
+      return fetch(API + "/contents/flights.json?ref=data&t=" + Date.now(), { headers: Object.assign(headers(), { Accept: "application/vnd.github.raw+json" }) })
+        .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+        .catch(function () { return fetch(RAW + "?t=" + Date.now()).then(function (r) { return r.json(); }); });
+    }
+    return fetch(RAW + "?t=" + Date.now()).then(function (r) { return r.json(); });
+  }
+  function render(d) {
+    var sc = $("screen"); sc.classList.remove("loading");
+    $("s-time").textContent = d.updated_txt || "--:--";
+    if (d.mode === "suivi" && d.track) {
+      var t = d.track;
+      $("s-mode").textContent = "Suivi · " + (t.status_txt || "");
+      $("s-big").textContent = t.flight + (t.has_route ? "  " + t.from + ">" + t.to : "");
+      $("s-sub").textContent = t.over_txt ? "Sur " + t.over_txt : (t.progress_txt && t.progress_txt !== "-" ? t.progress_txt + " du trajet" : "");
+      $("btn-home").hidden = false;
+    } else {
+      $("s-mode").textContent = "Ciel de " + (d.place_short || "Cagnac");
+      var n = d.total || 0;
+      $("s-big").textContent = n ? (d.flights[0].flight + (d.flights[0].has_route ? "  " + d.flights[0].from + ">" + d.flights[0].to : "")) : "Ciel calme";
+      $("s-sub").textContent = n ? n + " avion" + (n > 1 ? "s" : "") + " à " + d.radius_km + " km" : "Aucun avion à " + d.radius_km + " km";
+      $("btn-home").hidden = true;
+    }
+    return d;
+  }
+  function refreshScreen() {
+    return readData().then(render).catch(function () { $("s-big").textContent = "Écran illisible"; $("screen").classList.remove("loading"); });
+  }
+
+  // ---- Vérification du vol (adsbdb) ----
+  var lookupTimer = null;
+  $("flight").addEventListener("input", function () {
+    var q = this.value.trim().toUpperCase().replace(/\s+/g, "");
+    var hint = $("hint");
+    clearTimeout(lookupTimer);
+    if (q.length < 3 || q.indexOf("-") > -1) { hint.className = "hint"; hint.textContent = q.indexOf("-") > -1 ? "Immatriculation : l'avion sera cherché sous ce nom." : "Numéro de vol, indicatif (AFR6125) ou immatriculation (F-HPNA)."; return; }
+    lookupTimer = setTimeout(function () {
+      fetch("https://api.adsbdb.com/v0/callsign/" + encodeURIComponent(q)).then(function (r) { return r.json(); }).then(function (j) {
+        var fr = j && j.response && j.response.flightroute;
+        if (!fr) { hint.className = "hint"; hint.textContent = "Route inconnue pour ce vol : il sera suivi quand même s'il émet."; return; }
+        var a = function (p) { return (p.municipality || p.name || "").split("/")[0] + " (" + (p.iata_code || p.icao_code) + ")"; };
+        hint.className = "hint found";
+        hint.innerHTML = "";
+        var b = document.createElement("b"); b.textContent = (fr.airline && fr.airline.name ? fr.airline.name + " " : "") + (fr.callsign_iata || fr.callsign);
+        hint.appendChild(b);
+        hint.appendChild(document.createTextNode(" : " + a(fr.origin) + " → " + a(fr.destination)));
+      }).catch(function () { hint.className = "hint"; hint.textContent = ""; });
+    }, 450);
+  });
+
+  // ---- Déclenchement des workflows ----
+  function dispatch(file, inputs) {
+    if (!getToken()) { $("setup").open = true; say("Enregistre d'abord ton jeton GitHub, en bas de la page.", "err"); return Promise.reject(); }
+    return fetch(API + "/actions/workflows/" + file + "/dispatches", {
+      method: "POST", headers: Object.assign(headers(), { "Content-Type": "application/json" }),
+      body: JSON.stringify({ ref: "main", inputs: inputs || {} })
+    }).then(function (r) {
+      if (r.status === 204) return;
+      if (r.status === 401) throw new Error("Jeton refusé : vérifie qu'il est valide.");
+      if (r.status === 403 || r.status === 404) throw new Error("Jeton sans accès : il lui faut la permission Actions en lecture et écriture sur trmnl-radar-ciel.");
+      throw new Error("GitHub a répondu " + r.status + ".");
+    });
+  }
+  // Attend que la nouvelle donnée soit publiée (jusqu'à ~2 min)
+  function waitForUpdate(before, check) {
+    var tries = 0;
+    return new Promise(function (resolve) {
+      (function poll() {
+        tries++;
+        readData().then(function (d) {
+          if (d.updated_at !== before && (!check || check(d))) { render(d); resolve(d); }
+          else if (tries < 24) setTimeout(poll, 5000);
+          else resolve(null);
+        }).catch(function () { if (tries < 24) setTimeout(poll, 5000); else resolve(null); });
+      })();
+    });
+  }
+  function run(label, file, inputs, check) {
+    busy(true); say(label + "…");
+    var before = null;
+    readData().then(function (d) { before = d.updated_at; }).catch(function () {})
+      .then(function () { return dispatch(file, inputs); })
+      .then(function () { say("Demande envoyée. Mise à jour de l'écran en cours…"); loadRuns(); return waitForUpdate(before, check); })
+      .then(function (d) {
+        busy(false); loadRuns();
+        if (d) say("C'est fait. Le TRMNL l'affichera à son prochain rafraîchissement.", "ok");
+        else say("La demande est partie, mais la mise à jour tarde. Regarde les dernières demandes ci-dessous.", "err");
+      })
+      .catch(function (e) { busy(false); if (e && e.message) say(e.message, "err"); });
+  }
+
+  $("follow").addEventListener("submit", function (ev) {
+    ev.preventDefault();
+    var q = $("flight").value.trim();
+    if (!q) { say("Tape d'abord le vol à suivre.", "err"); $("flight").focus(); return; }
+    run("Démarrage du suivi de " + q.toUpperCase(), "suivre-un-vol.yml", { vol: q, jusqu_au: $("until").value || "" },
+        function (d) { return d.mode === "suivi"; });
+  });
+  $("btn-home").addEventListener("click", function () {
+    run("Retour au ciel de Cagnac", "arreter-le-suivi.yml", {}, function (d) { return d.mode === "zone"; });
+  });
+  $("btn-refresh").addEventListener("click", function () { run("Actualisation", "actualiser.yml", {}); });
+
+  // ---- Dernières demandes ----
+  var NAMES = { "Suivre un vol": "Suivre un vol", "Arrêter le suivi": "Retour au ciel", "Actualiser le radar": "Actualisation" };
+  function loadRuns() {
+    if (!getToken()) return;
+    fetch(API + "/actions/runs?per_page=6&event=workflow_dispatch", { headers: headers() })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (j) {
+        if (!j || !j.workflow_runs) return;
+        var ul = $("runs-list"); ul.innerHTML = "";
+        j.workflow_runs.slice(0, 5).forEach(function (r) {
+          var li = document.createElement("li");
+          var a = document.createElement("span");
+          a.textContent = (NAMES[r.name] || r.name) + (r.display_title && r.display_title !== r.name ? "" : "");
+          var b = document.createElement("span");
+          var when = new Date(r.created_at).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+          var st = r.status !== "completed" ? "en cours" : r.conclusion === "success" ? "réussie" : "échec";
+          b.textContent = when + " · " + st;
+          li.appendChild(a); li.appendChild(b); ul.appendChild(li);
+        });
+        $("runs").hidden = !j.workflow_runs.length;
+      }).catch(function () {});
+  }
+
+  // ---- Jeton ----
+  $("btn-save").addEventListener("click", function () {
+    var v = $("token").value.trim();
+    if (!v) { $("token-state").textContent = "Colle d'abord le jeton."; return; }
+    setToken(v); $("token").value = ""; showTokenState(); $("setup").open = false;
+    say("Jeton enregistré.", "ok"); loadRuns(); refreshScreen();
+  });
+  $("btn-forget").addEventListener("click", function () { setToken(""); showTokenState(); say("Jeton oublié."); $("runs").hidden = true; });
+
+  showTokenState();
+  refreshScreen();
+  loadRuns();
+  setInterval(refreshScreen, 60000);
+})();
+</script>
+</body>
+</html>
