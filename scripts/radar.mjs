@@ -11,6 +11,7 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { TYPES } from "./types.mjs";
+import { overflown } from "./geo.mjs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const CONFIG = JSON.parse(readFileSync(join(ROOT, "config.json"), "utf8"));
@@ -190,6 +191,35 @@ async function findTracked(query) {
   return { ac, route };
 }
 
+// Arc de grand cercle entre deux points, en [lon, lat] (longitudes « déroulées » pour MapLibre)
+function greatCircle(a, b, n = 40) {
+  const t = Math.PI / 180, R2D = 180 / Math.PI;
+  const [lat1, lon1, lat2, lon2] = [a.lat * t, a.lon * t, b.lat * t, b.lon * t];
+  const d = 2 * Math.asin(Math.sqrt(Math.sin((lat2 - lat1) / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin((lon2 - lon1) / 2) ** 2));
+  if (!(d > 1e-6)) return [[a.lon, a.lat], [b.lon, b.lat]];
+  const pts = [];
+  for (let i = 0; i <= n; i++) {
+    const f = i / n, A = Math.sin((1 - f) * d) / Math.sin(d), B = Math.sin(f * d) / Math.sin(d);
+    const x = A * Math.cos(lat1) * Math.cos(lon1) + B * Math.cos(lat2) * Math.cos(lon2);
+    const y = A * Math.cos(lat1) * Math.sin(lon1) + B * Math.cos(lat2) * Math.sin(lon2);
+    const z = A * Math.sin(lat1) + B * Math.sin(lat2);
+    pts.push([Math.atan2(y, x) * R2D, Math.atan2(z, Math.sqrt(x * x + y * y)) * R2D]);
+  }
+  return pts;
+}
+function unwrap(pts) {
+  const out = [];
+  for (const [x, y] of pts) {
+    let lon = x;
+    const prev = out[out.length - 1];
+    if (prev) while (lon - prev[0] > 180) lon -= 360;
+    if (prev) while (prev[0] - lon > 180) lon += 360;
+    out.push([Math.round(lon * 1000) / 1000, Math.round(y * 1000) / 1000]);
+  }
+  return out;
+}
+const js = v => JSON.stringify(v);
+
 async function trackScreen() {
   const { ac, route: r0 } = await findTracked(track.query);
   let f = null, route = r0;
@@ -240,14 +270,56 @@ async function trackScreen() {
     // segments pour la barre en points (style LED) : 30 pas
     progress_steps: pct === null ? 0 : Math.round(pct * 30 / 100)
   });
+  // Ce que l'avion survole (seulement en vol ou au dernier point connu)
+  const over = (status === "en_vol" || status === "signal_perdu") && pos ? overflown(pos.lat, pos.lon) : { kind: "inconnu", txt: "" };
+  t.over_txt = over.txt || "";
+  t.over_kind = over.kind;
+
   t.flap = [
     flapLine(`${t.flight} ${t.status_txt}`),
     flapLine(`DE   ${t.from || "---"} ${fitWords(t.from_city, 11)}`),
     flapLine(`VERS ${t.to || "---"} ${fitWords(t.to_city, 11)}`),
+    flapLine(t.over_txt ? `SUR ${fitWords(t.over_txt.replace(/^Près de /, "").replace(/,.*$/, ""), 16)}` : ""),
     flapLine(status === "en_vol" ? `ALT ${f.alt_m}M ${f.speed_kmh}KMH` : t.type || ""),
-    flapLine(pct === null ? "" : `FAIT ${pct}% RESTE ${remaining}KM`),
+    flapLine(pct === null ? "" : `${pct}% RESTE ${remaining}KM`),
     flapLine(eta ? `ARRIVEE VERS ${eta}` : status === "atterri" ? "BIENVENUE" : "")
   ];
+
+  // Trace réellement parcourue (un point par actualisation)
+  track.trail ||= [];
+  if (f && !f.on_ground) {
+    const p = [Math.round(f.lon * 1000) / 1000, Math.round(f.lat * 1000) / 1000];
+    const q = track.trail[track.trail.length - 1];
+    if (!q || q[0] !== p[0] || q[1] !== p[1]) track.trail.push(p);
+    if (track.trail.length > 400) track.trail = track.trail.filter((_, i) => i % 2 === 0);
+  }
+
+  // Données de la carte
+  const A = t.has_route && Number.isFinite(route.from_lat) ? { lat: route.from_lat, lon: route.from_lon } : null;
+  const B = t.has_route && Number.isFinite(route.to_lat) ? { lat: route.to_lat, lon: route.to_lon } : null;
+  let done = [], todo = [];
+  const trail = track.trail.map(([lon, lat]) => [lon, lat]);
+  if (status === "attente" || status === "au_sol") {
+    if (A && B) todo = greatCircle(A, B, 60);
+  } else {
+    const first = trail[0] ? { lon: trail[0][0], lat: trail[0][1] } : pos;
+    if (A && first) done = greatCircle(A, first, 20).concat(trail.slice(1));
+    else done = trail;
+    if (pos && done.length) done.push([pos.lon, pos.lat]);
+    if (B && pos && status !== "atterri") todo = greatCircle(pos, B, 40);
+  }
+  const all = unwrap(done.concat(todo));
+  const doneU = all.slice(0, done.length), todoU = all.slice(Math.max(0, done.length - 1));
+  t.map_done_js = js(doneU.length > 1 ? doneU : []);
+  t.map_todo_js = js(todoU.length > 1 ? (done.length ? todoU : all) : []);
+  const posU = pos && status !== "attente" && status !== "au_sol" ? (doneU[doneU.length - 1] || [pos.lon, pos.lat]) : null;
+  t.map_pos_js = js(posU);
+  const fromU = A ? (all[0] || [A.lon, A.lat]) : null;
+  const toU = B ? (all[all.length - 1] || [B.lon, B.lat]) : null;
+  t.map_from_js = js(fromU);
+  t.map_to_js = js(toU);
+  t.map_heading = f && Number.isFinite(f.track_deg) ? f.track_deg : 0;
+  t.has_map = !!(posU || (fromU && toU));
 
   if (f) track.last = { lat: f.lat, lon: f.lon, seen: NOW.toISOString(), type: f.type, reg: f.reg };
   return t;
@@ -269,7 +341,7 @@ if (ACTION === "suivre") {
   if (!q) { console.error("Indique un vol à suivre."); process.exit(1); }
   const until = (process.env.TRACK_UNTIL || "").trim();
   if (until && !/^\d{4}-\d{2}-\d{2}$/.test(until)) { console.error("Date de fin au format AAAA-MM-JJ."); process.exit(1); }
-  track = { query: q, until: until || null, started_at: NOW.toISOString(), seen_airborne: false, landed_at: null, last: null };
+  track = { query: q, until: until || null, started_at: NOW.toISOString(), seen_airborne: false, landed_at: null, last: null, trail: [] };
   console.log(`Suivi démarré : ${q}${until ? ` jusqu'au ${until}` : ""}`);
 } else if (ACTION === "arreter") {
   track = null;

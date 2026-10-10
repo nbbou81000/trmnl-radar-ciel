@@ -1,0 +1,27 @@
+name: Préparer les données géographiques
+
+# À lancer seulement pour rafraîchir les pays, mers et villes utilisés pour « Survole … ».
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  geo:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - name: Télécharger et compacter les données
+        run: node scripts/build-geo.mjs | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Enregistrer dans le dépôt
+        run: |
+          git config user.name "radar-bot"
+          git config user.email "radar-bot@users.noreply.github.com"
+          git add geo
+          git diff --cached --quiet || git commit -m "Données géographiques mises à jour"
+          git push

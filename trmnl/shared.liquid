@@ -2,7 +2,7 @@
 <style>
   /* Radar du ciel — styles LED et flip-flap (le style Classique n'utilise que le framework TRMNL) */
   .rc { position: relative; width: 100%; height: 100%; container-type: size; overflow: hidden; --rows: 5; }
-  .rc--n1 { --rows: 1; } .rc--n2 { --rows: 2; } .rc--n3 { --rows: 3; } .rc--n4 { --rows: 4; } .rc--n5 { --rows: 5; } .rc--n6 { --rows: 6; }
+  .rc--n1 { --rows: 1; } .rc--n2 { --rows: 2; } .rc--n3 { --rows: 3; } .rc--n4 { --rows: 4; } .rc--n5 { --rows: 5; } .rc--n6 { --rows: 6; } .rc--n7 { --rows: 7; }
 
   /* ---------- LED ---------- */
   .rc--led { background: #000; color: #fff; border-radius: 8px; padding: 2.5cqh 3cqw; box-sizing: border-box;
@@ -32,7 +32,9 @@
   .rc--led .lt-dot--on { background: #fff; transform: none; }
   .rc--led .lt-info { text-align: center; font-size: min(5.6cqh, 3.9cqw); white-space: nowrap; }
   .rc--led .lt-info--alone { margin-top: 6cqh; }
-  .rc--led .lt-metrics { display: grid; grid-template-columns: repeat(4, 1fr); text-align: center; margin-top: 4.5cqh; }
+  .rc--led .lt-over { text-align: center; font-size: min(4.6cqh, 3.2cqw); margin-top: 3cqh; white-space: nowrap; overflow: hidden; }
+  .rc--led.rc--short .lt-over { display: none; }
+  .rc--led .lt-metrics { display: grid; grid-template-columns: repeat(4, 1fr); text-align: center; margin-top: 3.5cqh; }
   .rc--led .lt-metrics span { display: block; }
   .rc--led .lt-k { font-size: min(4.2cqh, 2.9cqw); margin-bottom: 1.5cqh; }
   .rc--led .lt-v { font-size: min(7cqh, 4.8cqw); }

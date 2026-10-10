@@ -7,3 +7,12 @@
   - "LED: led"
   - "Flip-flap: flip-flap"
   default: classique
+
+- keyname: suivi_affichage
+  field_type: select
+  name: Écran pendant le suivi d'un vol
+  description: Tableau de suivi (dans le style choisi) ou carte avec la position de l'avion et sa trajectoire.
+  options:
+  - "Tableau de suivi: tableau"
+  - "Carte: carte"
+  default: tableau

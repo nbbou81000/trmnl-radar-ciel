@@ -1,14 +1,115 @@
 {%- comment -%} Radar du ciel — vue half_horizontal (généré, ne pas modifier : voir trmnl/src) {%- endcomment -%}
-{%- assign n = 2 -%}{%- assign narrow = false -%}{%- assign short = true -%}
+{%- assign sz = "half_horizontal" -%}{%- assign n = 2 -%}{%- assign narrow = false -%}{%- assign short = true -%}
 {%- assign st = trmnl.plugin_settings.custom_fields_values.style | default: "classique" | downcase -%}
 {%- assign shown = flights.size | default: 0 -%}
 {%- if shown > n -%}{%- assign shown = n -%}{%- endif -%}
 {%- assign blanks = n | minus: shown -%}
 {%- assign t = track -%}
 {%- assign total_n = total | default: 0 -%}
+{%- assign vue = trmnl.plugin_settings.custom_fields_values.suivi_affichage | default: "tableau" | downcase -%}
 {%- capture title_line -%}{% if mode == "suivi" %}Suivi {{ t.flight }}{% else %}{{ place_short }} · {{ total_n }} avion{% if total_n > 1 %}s{% endif %} à {{ radius_km }} km{% endif %} · {{ updated_txt }}{% if stale %} (ancien){% endif %}{%- endcapture -%}
 
-{%- if st == "led" -%}
+{%- if mode == "suivi" and vue == "carte" and t.has_map -%}
+{%- comment -%} ===================== CARTE DU SUIVI (MapLibre + tuiles TRMNL) ===================== {%- endcomment -%}
+<script src="https://trmnl.com/js/maplibre-gl/5.24.0/maplibre-gl.js"></script>
+<link href="https://trmnl.com/js/maplibre-gl/5.24.0/maplibre-gl.css" rel="stylesheet">
+<div class="layout layout--col">
+  <div id="rc-map-{{ sz }}" class="map stretch w--full rounded--base">
+    {%- unless short and narrow -%}
+    <div id="rc-card-{{ sz }}" class="absolute top--2 left--2 z--2 {% if short or narrow %}p--2{% else %}p--4{% endif %} w--max-60 bg--canvas outline outline--muted">
+      <div class="flex flex--col gap--small">
+        <div class="item">
+          <div class="meta"></div>
+          <div class="content">
+            <span class="value value--small">{{ t.flight }}</span>
+            <span class="label">{% if t.has_route %}{{ t.from }} – {{ t.to }} · {% endif %}{{ t.status_txt }}{% if t.progress_pct != nil %} · {{ t.progress_pct }} %{% endif %}</span>
+          </div>
+        </div>
+        {%- if t.over_txt != "" -%}
+        <div class="divider"></div>
+        <div class="flex flex--col">
+          <span class="label label--small">Survole</span>
+          <span class="title title--small" data-clamp="2">{{ t.over_txt }}</span>
+        </div>
+        {%- endif -%}
+        {%- unless short or t.status == "attente" or t.status == "au_sol" -%}
+        <div class="divider"></div>
+        <table class="table table--condensed">
+          <tbody>
+            <tr><td><span class="label label--small">Altitude</span></td><td><span class="label label--small">{{ t.alt_txt }} m</span></td></tr>
+            <tr><td><span class="label label--small">Vitesse</span></td><td><span class="label label--small">{{ t.speed_txt }} km/h</span></td></tr>
+            {%- if t.eta_txt != "" -%}<tr><td><span class="label label--small">Arrivée</span></td><td><span class="label label--small">vers {{ t.eta_txt }}</span></td></tr>{%- endif -%}
+            {%- if t.remaining_km and t.remaining_km > 0 -%}<tr><td><span class="label label--small">Reste</span></td><td><span class="label label--small">{{ t.remaining_txt }} km</span></td></tr>{%- endif -%}
+            {%- if t.type != "" -%}<tr><td><span class="label label--small">Avion</span></td><td><span class="label label--small">{{ t.type }}</span></td></tr>{%- endif -%}
+          </tbody>
+        </table>
+        {%- endunless -%}
+      </div>
+    </div>
+    {%- endunless -%}
+  </div>
+</div>
+<div class="title_bar">
+  <img class="image image-stroke" src="data:image/svg+xml;base64,{{ svg_logo | base64_encode }}" />
+  <span class="title">Radar du ciel</span>
+  <span class="instance">{{ title_line }}</span>
+</div>
+<script type="text/javascript">
+(function () {
+  var el = "rc-map-{{ sz }}", cardId = "rc-card-{{ sz }}";
+  var done = {{ t.map_done_js | default: "[]" }}, todo = {{ t.map_todo_js | default: "[]" }};
+  var pos = {{ t.map_pos_js | default: "null" }}, from = {{ t.map_from_js | default: "null" }}, to = {{ t.map_to_js | default: "null" }};
+  var heading = {{ t.map_heading | default: 0 }};
+  function whenReady(cb) {
+    var tries = 0;
+    (function attempt() {
+      if (window.TRMNLMaps && window.maplibregl) return cb();
+      if (++tries > 200) return;
+      setTimeout(attempt, 50);
+    })();
+  }
+  // Silhouette d'avion (pointe vers le haut) dessinée de façon synchrone,
+  // pour qu'elle soit prête avant que le framework ne prenne la capture.
+  var PLANE = "M12 1.5c.9 0 1.5.8 1.5 1.7V9l8 4.6v2.3l-8-2.4v4.8l2.4 1.8V22L12 21l-3.9 1v-1.9l2.4-1.8v-4.8l-8 2.4v-2.3l8-4.6V3.2c0-.9.6-1.7 1.5-1.7z";
+  function addPlane(map, size) {
+    var px = Math.round(size), c = document.createElement("canvas");
+    c.width = c.height = px;
+    var ctx = c.getContext("2d");
+    ctx.scale(px / 24, px / 24);
+    var path = new Path2D(PLANE);
+    ctx.lineJoin = "round"; ctx.lineWidth = 2.2; ctx.strokeStyle = "#fff"; ctx.stroke(path);
+    ctx.fillStyle = "#000"; ctx.fill(path);
+    if (!map.hasImage("rc-plane")) map.addImage("rc-plane", ctx.getImageData(0, 0, px, px));
+    map.addSource("rc-plane", { type: "geojson", data: { type: "Feature", properties: {}, geometry: { type: "Point", coordinates: pos } } });
+    map.addLayer({ id: "rc-plane", type: "symbol", source: "rc-plane", layout: {
+      "icon-image": "rc-plane", "icon-rotate": heading, "icon-rotation-alignment": "map",
+      "icon-allow-overlap": true, "icon-ignore-placement": true } });
+  }
+  whenReady(function () {
+    TRMNLMaps.watch(el, function () {
+      var map = new maplibregl.Map(TRMNLMaps.options({ el: el, preset: "outline" }));
+      map.on("load", function () {
+        if (todo.length > 1) TRMNLMaps.route(map, todo, { el: el, id: "todo", i: done.length > 1 ? 1 : 0, n: 2 });
+        if (done.length > 1) TRMNLMaps.route(map, done, { el: el, id: "done", i: 0, n: 2 });
+        if (from) TRMNLMaps.dot(map, from, { el: el, id: "from" });
+        if (to) TRMNLMaps.dot(map, to, { el: el, id: "to", hollow: true });
+        if (pos) addPlane(map, TRMNLPaint.px({% if short or narrow %}26{% else %}36{% endif %}, { el: el }));
+      });
+      var pts = done.concat(todo);
+      if (pos) pts.push(pos);
+      if (from) pts.push(from);
+      if (to) pts.push(to);
+      var gutter = TRMNLPaint.px(28, { el: el });
+      var card = document.getElementById(cardId);
+      var left = card ? card.offsetLeft + card.offsetWidth + gutter : gutter;
+      TRMNLMaps.fit(map, pts, { padding: { top: gutter, right: gutter, bottom: gutter, left: left }, maxZoom: 9 });
+      return map;
+    });
+  });
+})();
+</script>
+
+{%- elsif st == "led" -%}
 {%- comment -%} ===================== STYLE LED ===================== {%- endcomment -%}
 <div class="layout">
   <div class="rc rc--led rc--n{{ n }}{% if narrow %} rc--narrow{% endif %}{% if short %} rc--short{% endif %}">
@@ -25,6 +126,7 @@
     {%- else -%}
     <div class="lt-info lt-info--alone">{% if t.status == "attente" %}en attente du transpondeur{% else %}route inconnue{% endif %}</div>
     {%- endif -%}
+    {%- if t.over_txt != "" -%}<div class="lt-over">sur {{ t.over_txt }}</div>{%- endif -%}
     <div class="lt-metrics">
       <div><span class="lt-k">alt m</span><span class="lt-v">{{ t.alt_txt }}</span></div>
       <div><span class="lt-k">km/h</span><span class="lt-v">{{ t.speed_txt }}</span></div>
@@ -55,7 +157,7 @@
 {%- comment -%} ===================== STYLE FLIP-FLAP ===================== {%- endcomment -%}
 <div class="layout">
   {%- if mode == "suivi" -%}
-  {%- assign tn = 6 -%}{%- if short -%}{%- assign tn = 3 -%}{%- endif -%}
+  {%- assign tn = 7 -%}{%- if short -%}{%- assign tn = 3 -%}{%- endif -%}
   <div class="rc rc--flap rc--track rc--n{{ tn }}">
     <div class="fl-head"><span>suivi</span><span>{{ updated_txt }}</span></div>
     <div class="fl-body">
@@ -112,6 +214,7 @@
   {%- else -%}
   <span class="label text--center">{% if t.status == "attente" %}Le vol apparaîtra dès que son transpondeur émettra{% else %}Route inconnue{% endif %}</span>
   {%- endif -%}
+  {%- if t.over_txt != "" -%}<span class="label text--center" data-clamp="1">Survole : {{ t.over_txt }}</span>{%- endif -%}
   {%- unless short or t.status == "attente" -%}
   <div class="divider"></div>
   <div class="grid grid--cols-{% if narrow %}2{% else %}4{% endif %}">

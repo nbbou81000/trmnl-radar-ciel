@@ -14,7 +14,7 @@ const sizes = {
 };
 for (const [name, o] of Object.entries(sizes)) {
   const head = `{%- comment -%} Radar du ciel — vue ${name} (généré, ne pas modifier : voir trmnl/src) {%- endcomment -%}\n` +
-    `{%- assign n = ${o.n} -%}{%- assign narrow = ${o.narrow} -%}{%- assign short = ${o.short} -%}\n`;
+    `{%- assign sz = "${name}" -%}{%- assign n = ${o.n} -%}{%- assign narrow = ${o.narrow} -%}{%- assign short = ${o.short} -%}\n`;
   writeFileSync(join(here, "..", `${name}.liquid`), head + body);
 }
 console.log("Gabarits générés :", Object.keys(sizes).join(", "));
