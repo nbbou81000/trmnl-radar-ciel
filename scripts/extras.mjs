@@ -309,9 +309,18 @@ export async function issInfo(dataDir, home, now, tz) {
   const file = join(dataDir, "iss.json");
   let c = readJson(file, null);
   if (!c || !c.tle || now - new Date(c.at) > 12 * 3600e3) {
-    const txt = await fetchText("https://celestrak.org/NORAD/elements/gp.php?CATNR=25544&FORMAT=TLE");
-    const lines = (txt || "").split(/\r?\n/).map(s => s.trim()).filter(Boolean);
-    if (lines.length >= 3) { c = { at: now.toISOString(), tle: [lines[1], lines[2]] }; writeFileSync(file, JSON.stringify(c)); }
+    // Plusieurs sources, car certaines refusent les serveurs de GitHub
+    let tle = null;
+    for (const url of ["https://live.ariss.org/iss.txt", "https://celestrak.org/NORAD/elements/gp.php?CATNR=25544&FORMAT=TLE"]) {
+      const txt = await fetchText(url);
+      const lines = (txt || "").split(/\r?\n/).map(s => s.trim()).filter(l => /^[12] 25544/.test(l));
+      if (lines.length >= 2) { tle = [lines[0], lines[1]]; break; }
+    }
+    if (!tle) {
+      const j = await fetchJson("https://tle.ivanstanojevic.me/api/tle/25544") || await fetchJson("https://api.wheretheiss.at/v1/satellites/25544/tles");
+      if (j?.line1 && j?.line2) tle = [j.line1, j.line2];
+    }
+    if (tle) { c = { at: now.toISOString(), tle }; writeFileSync(file, JSON.stringify(c)); }
   }
   if (!c?.tle) return null;
   const rec = satellite.twoline2satrec(c.tle[0], c.tle[1]);
