@@ -68,3 +68,66 @@
 {%- capture svg_logo -%}
 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 10h4a2 2 0 0 1 0 4h-4l-4 7h-3l2 -7h-4l-2 2h-3l2 -4l-2 -4h3l2 2h4l-2 -7h3z"/></svg>
 {%- endcapture -%}
+<style>
+  /* ---------- Logos, bandeau « rare » ---------- */
+  .rc-logo { height: 18px; width: auto; max-width: 120px; object-fit: contain; flex-shrink: 0; }
+  .rc-logo--big { height: 34px; max-width: 170px; }
+  .screen--lg .rc-logo { height: 26px; max-width: 170px; } .screen--lg .rc-logo--big { height: 50px; max-width: 250px; }
+  .rc-ciel__line { display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .rc-logo--small { height: 13px; max-width: 90px; }
+  .screen--lg .rc-logo--small { height: 18px; max-width: 120px; }
+  .rc-rare { font-family: "Inter Variable", Inter, "Helvetica Neue", Arial, sans-serif; display: flex; align-items: center; gap: 10px; background: #000; color: #fff; border-radius: 8px; padding: 5px 10px; width: 100%; box-sizing: border-box; }
+  .rc-rare__tag { font-weight: 800; letter-spacing: .08em; font-size: 15px; }
+  .rc-rare__txt { font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .rc-badge { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; background: #000; color: #fff; font-weight: 700; font-size: 13px; flex-shrink: 0; }
+
+  /* ---------- Où regarder ---------- */
+  .rc-ciel { display: grid; grid-template-columns: 100cqh 1fr; gap: 3cqw; align-items: stretch; }
+  .rc-ciel .rc-sky { width: 100cqh; height: 100cqh; }
+  .rc-ciel__side { display: flex; flex-direction: column; gap: 2.4cqh; min-width: 0; overflow: hidden; }
+  .rc-ciel__item { display: flex; gap: 10px; align-items: flex-start; }
+  .rc-ciel__txt { display: flex; flex-direction: column; min-width: 0; }
+  .rc-ciel__next, .rc-ciel__iss { display: flex; flex-direction: column; gap: 3px; border-top: 1px dashed #000; padding-top: 1.8cqh; }
+  .rc-ciel.rc--narrow { grid-template-columns: 1fr; grid-template-rows: 56cqh 1fr; gap: 2cqh; justify-items: center; }
+  .rc-ciel.rc--narrow .rc-sky { width: 56cqh; height: 56cqh; }
+  .rc-ciel.rc--narrow .rc-ciel__side { width: 100%; }
+  .rc-ciel.rc--narrow.rc--short { grid-template-columns: 100cqh 1fr; grid-template-rows: none; justify-items: stretch; gap: 3cqw; }
+  .rc-ciel.rc--narrow.rc--short .rc-sky { width: 100cqh; height: 100cqh; }
+  .rc-ciel.rc--short .rc-ciel__next { border-top: 0; padding-top: 0; }
+
+  /* ---------- Carnet du ciel ---------- */
+  .rc-carnet { display: flex; flex-direction: column; gap: 2.4cqh; }
+  .rc-carnet__head { display: flex; justify-content: space-between; align-items: baseline; }
+  .rc-carnet__stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 2cqw; padding-bottom: 2cqh; border-bottom: 1px dashed #000; }
+  .rc-carnet__stats > div { display: flex; flex-direction: column; gap: 2px; }
+  .rc-carnet.rc--narrow .rc-carnet__stats { grid-template-columns: repeat(2, 1fr); }
+  .rc-carnet__body { display: grid; grid-template-columns: 1fr 1fr; gap: 3cqw; flex: 1; min-height: 0; }
+  .rc-carnet.rc--narrow .rc-carnet__body { grid-template-columns: 1fr; }
+  .rc-carnet__col { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+  .rc-gap { margin-top: 1.8cqh; }
+  .rc-hist { width: 100%; height: 30cqh; margin-top: 1cqh; }
+  .rc-bar { height: 8px; border: 1.5px solid #000; margin-top: 4px; }
+  .rc-bar__fill { height: 100%; background: #000; }
+
+  /* ---------- Vol et arrivée ---------- */
+  .rc-arr { display: flex; flex-direction: column; gap: 2cqh; }
+  .rc-arr__head { display: flex; align-items: center; gap: 2cqw; }
+  .rc-arr__id { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+  .rc-arr__profile { position: relative; height: 26cqh; padding-bottom: 20px; border-top: 1px dashed #000; padding-top: 1.5cqh; }
+  .rc-arr__profile svg { width: 100%; height: 100%; }
+  .rc-arr__dot { position: absolute; width: 14px; height: 14px; margin: -7px 0 0 -7px; border-radius: 50%; background: #000; border: 2px solid #fff; translate: 0 1.5cqh; }
+  .rc-arr__axis { position: absolute; left: 0; right: 0; bottom: 0; display: flex; justify-content: space-between; }
+  .rc-arr__dest { display: grid; grid-template-columns: auto 1fr; gap: 4cqw; align-items: center; border-top: 1px dashed #000; padding-top: 2cqh; }
+  .rc-arr__time { display: flex; flex-direction: column; }
+  .rc-arr__wx { display: flex; align-items: center; gap: 2cqw; min-width: 0; }
+  .rc-wx { width: 64px; height: 64px; flex-shrink: 0; }
+  .rc-arr__wxtxt { display: flex; flex-direction: column; min-width: 0; }
+  .rc-arr__foot { display: flex; justify-content: space-between; gap: 2cqw; border-top: 1px dashed #000; padding-top: 1.5cqh; margin-top: auto; }
+  .rc-arr.rc--narrow .rc-arr__dest { grid-template-columns: 1fr; gap: 1.5cqh; }
+  .rc-arr.rc--narrow .rc-arr__head { flex-wrap: wrap; justify-content: space-between; row-gap: 1cqh; }
+  .rc-arr.rc--narrow .rc-arr__id { flex-basis: 100%; order: 3; }
+  .rc-arr.rc--narrow .rc-logo--big { height: 22px; }
+  .rc-arr.rc--narrow .rc-arr__foot { flex-direction: column; }
+  .rc-arr.rc--short .rc-arr__profile { height: 22cqh; }
+  .rc-arr.rc--short .rc-wx { width: 36px; height: 36px; }
+</style>

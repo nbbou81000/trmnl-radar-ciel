@@ -13,12 +13,16 @@ import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { TYPES } from "./types.mjs";
 import { overflown } from "./geo.mjs";
+import { ensureLogos, logoUrl, lookAngles, trendTxt, skyXY, nextPass, rarity, updateCarnet, summarizeCarnet, issInfo, arrivalInfo, altitudeProfile, dirName } from "./extras.mjs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const CONFIG = JSON.parse(readFileSync(join(ROOT, "config.json"), "utf8"));
 const DATA_DIR = process.env.DATA_DIR || join(ROOT, "data");
 const ACTION = (process.env.ACTION || "actualiser").toLowerCase();
 const TZ = CONFIG.fuseau || "Europe/Paris";
+const HOME = { lat: CONFIG.latitude, lon: CONFIG.longitude, alt_m: CONFIG.altitude_m ?? 280 };
+const REPO = process.env.GITHUB_REPOSITORY || CONFIG.depot || "nbbou81000/trmnl-radar-ciel";
+const DATA_BASE = `https://raw.githubusercontent.com/${REPO}/data`;
 const NOW = new Date();
 const UA = "trmnl-radar-ciel (github.com/nbbou81000)";
 
@@ -88,7 +92,7 @@ async function lookupRoute(callsign) {
     from_name: fr.origin?.name || null,
     from_icao: fr.origin?.icao_code || null, from_cc: fr.origin?.country_iso_name || null,
     to_icao: fr.destination?.icao_code || null, to_cc: fr.destination?.country_iso_name || null,
-    airline_icao: fr.airline?.icao || null, airline_cc: fr.airline?.country_iso || null,
+    airline_icao: fr.airline?.icao || null, airline_cc: fr.airline?.country_iso || null, airline_iata: fr.airline?.iata || null,
     from_lat: fr.origin?.latitude, from_lon: fr.origin?.longitude,
     to: fr.destination?.iata_code || fr.destination?.icao_code || null,
     to_city: cleanCity(fr.destination?.municipality) || fr.destination?.name || null,
@@ -166,6 +170,12 @@ async function describe(ac) {
     lat: freshPos ? ac.lat : lastPos ? lastPos.lat : null,
     lon: freshPos ? ac.lon : lastPos ? lastPos.lon : null,
     pos_age_s: freshPos ? (Number(ac.seen_pos) || 0) : lastPos ? (Number(lastPos.seen_pos) || 0) : null,
+    hex: ac.hex || "",
+    airline_icao: route?.airline_icao || (callsign && /^[A-Z]{3}\d/.test(callsign) ? callsign.slice(0, 3) : ""),
+    airline_iata: route?.airline_iata || (route?.callsign_iata ? route.callsign_iata.slice(0, 2) : ""),
+    from_cc: route?.from_cc || "",
+    route_km: route && [route.from_lat, route.from_lon, route.to_lat, route.to_lon].every(Number.isFinite) ? Math.round(haversine(route.from_lat, route.from_lon, route.to_lat, route.to_lon)) : 0,
+    rare: rarity(ac, null),
     _route: route, _ac: ac, _owner: owner
   };
   return o;
@@ -188,25 +198,28 @@ const fitWords = (s, w) => { const a = ascii(s); if (a.length <= w) return a; co
 
 // ---------- mode zone ----------
 async function zone() {
-  const radiusNm = Math.max(1, Math.round(CONFIG.rayon_km / NM_TO_KM));
+  // On interroge un peu plus large que le rayon affiché, pour prévoir les prochains passages
+  const wideKm = Math.max(CONFIG.rayon_km, 60);
+  const radiusNm = Math.max(1, Math.round(wideKm / NM_TO_KM));
   const j = await getJson(`https://api.adsb.lol/v2/point/${CONFIG.latitude}/${CONFIG.longitude}/${radiusNm}`, 3);
   if (!j) return { ok: false };
-  const list = (j.ac || [])
+  const wide = (j.ac || [])
     .filter(a => Number.isFinite(a.lat) && Number.isFinite(a.lon))
     .filter(a => CONFIG.inclure_au_sol || a.alt_baro !== "ground")
     .map(a => ({ a, d: haversine(CONFIG.latitude, CONFIG.longitude, a.lat, a.lon) }))
-    .filter(x => x.d <= CONFIG.rayon_km)
     .sort((x, y) => x.d - y.d);
-  const flights = [];
-  for (const { a, d } of list.slice(0, CONFIG.vols_max)) {
+  const inRadius = wide.filter(x => x.d <= CONFIG.rayon_km);
+  const described = [];
+  for (const { a, d } of wide.slice(0, 30)) {
     const f = await describe(a);
     f.dist_km = Math.round(d);
-    f.flap = flapZone(f);
-    f.flap_short = flapZoneShort(f);
-    delete f._route; delete f._ac; delete f._owner;
-    flights.push(f);
+    f.in_radius = d <= CONFIG.rayon_km;
+    f.from_country = countryFr(f.from_cc);
+    described.push(f);
   }
-  return { ok: true, total: list.length, flights };
+  const flights = described.filter(f => f.in_radius).slice(0, CONFIG.vols_max);
+  for (const f of flights) { f.flap = flapZone(f); f.flap_short = flapZoneShort(f); }
+  return { ok: true, total: inRadius.length, flights, described };
 }
 
 // ---------- mode suivi ----------
@@ -274,6 +287,7 @@ function bearing(a, b) {
 const okPt = p => Array.isArray(p) && Number.isFinite(p[0]) && Number.isFinite(p[1]);
 
 async function trackScreen() {
+  let etaDate = null;
   const { ac, route: r0 } = await findTracked(track.query);
   let f = null, route = r0;
   if (ac) {
@@ -343,8 +357,9 @@ async function trackScreen() {
     const total = haversine(route.from_lat, route.from_lon, route.to_lat, route.to_lon);
     t.route_doubt = status === "en_vol" && done + rem > total * 1.35 + 150;
     if (status === "signal_perdu" && rem < 40) status = "atterri";
-    if (status === "en_vol" && f.speed_kmh > 150) eta = hm(new Date(NOW.getTime() + (rem / f.speed_kmh) * 3600e3 + 8 * 60e3));
-    if (status === "estime") eta = hm(new Date(NOW.getTime() + (rem / (track.speed_kmh || 820)) * 3600e3 + 8 * 60e3));
+    if (status === "en_vol" && f.speed_kmh > 150) etaDate = new Date(NOW.getTime() + (rem / f.speed_kmh) * 3600e3 + 8 * 60e3);
+    if (status === "estime") etaDate = new Date(NOW.getTime() + (rem / (track.speed_kmh || 820)) * 3600e3 + 8 * 60e3);
+    if (etaDate) eta = hm(etaDate);
   }
   if (status === "atterri" || status === "arrivee_probable") { pct = 100; remaining = 0; track.landed_at ||= NOW.toISOString(); }
   if (status === "au_sol" && pct === null) pct = 0;
@@ -385,6 +400,7 @@ async function trackScreen() {
   track.trail ||= [];
   if (freshFix && !f.on_ground) {
     const p = [Math.round(f.lon * 1000) / 1000, Math.round(f.lat * 1000) / 1000];
+    if (Number.isFinite(f.alt_m)) p.push(f.alt_m);
     const q = track.trail[track.trail.length - 1];
     if (!q || q[0] !== p[0] || q[1] !== p[1]) track.trail.push(p);
     if (track.trail.length > 400) track.trail = track.trail.filter((_, i) => i % 2 === 0);
@@ -487,6 +503,18 @@ async function trackScreen() {
   if (f) { delete f._ac; delete f._owner; }
 
   track.summary = { flight: t.flight, from: t.from, to: t.to, from_city: t.from_city, to_city: t.to_city, status_txt: t.status_txt };
+  // Logo de la compagnie
+  try {
+    const air = { iata: route?.airline_iata || (route?.callsign_iata || "").slice(0, 2), icao: route?.airline_icao || f?.airline_icao || "" };
+    const idx = await ensureLogos(DATA_DIR, [air], 2);
+    t.logo = logoUrl(DATA_BASE, idx, air);
+  } catch { t.logo = ""; }
+  // Profil d'altitude et arrivée (heure locale, météo)
+  t.profile = altitudeProfile(track.trail, A, B, pos, estimated, status);
+  t.takeoff_txt = track.airborne_since ? hm(new Date(track.airborne_since)) : "";
+  try {
+    t.arr = B ? await arrivalInfo(DATA_DIR, { lat: B.lat, lon: B.lon, icao: route?.to_icao, city: t.to_city, code: t.to }, etaDate, TZ, NOW) : null;
+  } catch (e) { console.warn("Arrivée :", e.message); t.arr = null; }
   if (f) track.last = { lat: hasFix ? f.lat : track.last?.lat ?? null, lon: hasFix ? f.lon : track.last?.lon ?? null, seen: NOW.toISOString(), type: f.type, reg: f.reg, owner: own };
   return t;
 }
@@ -556,36 +584,88 @@ const out = {
   map_zoom: track ? (prefs.zoom_suivi || 0) : (prefs.zoom_zone || 0)
 };
 
-if (track) {
-  out.track = await trackScreen();
-} else {
-  const z = await zone();
-  if (!z.ok) {
-    // adsb.lol injoignable : on garde l'écran précédent plutôt qu'un écran vide
-    const prev = readJson("flights.json", null);
-    if (prev && prev.mode === "zone") {
-      prev.stale = true;
-      writeJson("flights.json", prev);
-      console.log("adsb.lol injoignable : écran précédent conservé.");
-      process.exit(0);
-    }
-    out.flights = []; out.total = 0; out.error = "Données indisponibles";
-  } else {
-    out.flights = z.flights; out.total = z.total;
+// Le ciel au-dessus de chez soi est toujours relevé (carnet, alertes), même pendant un suivi
+const z = await zone();
+if (!z.ok && !track) {
+  // adsb.lol injoignable : on garde l'écran précédent plutôt qu'un écran vide
+  const prev = readJson("flights.json", null);
+  if (prev && prev.mode === "zone") {
+    prev.stale = true;
+    writeJson("flights.json", prev);
+    console.log("adsb.lol injoignable : écran précédent conservé.");
+    process.exit(0);
   }
-  out.count = out.flights.length;
-  out.nearest = out.flights[0] || null;
-  // Données de la carte du mode zone
-  out.map_flights_js = js(out.flights.map((f, i) => [Math.round(f.lon * 1e4) / 1e4, Math.round(f.lat * 1e4) / 1e4, f.track_deg || 0, i + 1]));
-  const circle = [];
-  for (let i = 0; i <= 72; i++) {
-    const b = i * 5 * Math.PI / 180, d = CONFIG.rayon_km / 6371, la = CONFIG.latitude * Math.PI / 180, lo = CONFIG.longitude * Math.PI / 180;
-    const la2 = Math.asin(Math.sin(la) * Math.cos(d) + Math.cos(la) * Math.sin(d) * Math.cos(b));
-    const lo2 = lo + Math.atan2(Math.sin(b) * Math.sin(d) * Math.cos(la), Math.cos(d) - Math.sin(la) * Math.sin(la2));
-    circle.push([Math.round(lo2 * 180 / Math.PI * 1e4) / 1e4, Math.round(la2 * 180 / Math.PI * 1e4) / 1e4]);
-  }
-  out.map_circle_js = js(circle);
 }
+const described = z.ok ? z.described : [];
+
+// Logos des compagnies (vol suivi compris)
+const airlinesWanted = described.map(f => ({ iata: f.airline_iata, icao: f.airline_icao }));
+let logoIdx = {};
+try { logoIdx = await ensureLogos(DATA_DIR, airlinesWanted); } catch (e) { console.warn("Logos :", e.message); }
+for (const f of described) f.logo = logoUrl(DATA_BASE, logoIdx, { iata: f.airline_iata, icao: f.airline_icao });
+
+if (track) out.track = await trackScreen(logoIdx);
+
+out.flights = z.ok ? z.flights : [];
+out.total = z.ok ? z.total : 0;
+if (!z.ok) out.error = "Données indisponibles";
+out.count = out.flights.length;
+out.nearest = out.flights[0] || null;
+
+// Où regarder : direction, hauteur, tendance et position sur la carte du ciel (repère 400 × 400)
+for (const f of out.flights) {
+  if (!Number.isFinite(f.alt_m)) continue;
+  const la = lookAngles(HOME, f.lat, f.lon, f.alt_m);
+  const xy = skyXY(la.az, Math.max(0, la.el));
+  Object.assign(f, {
+    az: Math.round(la.az), el: Math.round(la.el), dir_txt: dirName(la.az),
+    trend_txt: trendTxt(la.az, f.track_deg),
+    sky_x: Math.round(200 + xy.x * 170), sky_y: Math.round(200 + xy.y * 170)
+  });
+}
+out.next_pass = z.ok ? nextPass(HOME, described.filter(f => !f.on_ground)) : null;
+
+// Appareil rare dans le rayon (urgence > militaire > type rare)
+const rares = described.filter(f => f.in_radius && f.rare).sort((a, b) => b.rare.level - a.rare.level || a.dist_km - b.dist_km);
+if (rares.length) {
+  const r = rares[0];
+  const la = Number.isFinite(r.alt_m) ? lookAngles(HOME, r.lat, r.lon, r.alt_m) : null;
+  out.rare = {
+    flight: r.flight, why: r.rare.why, level: r.rare.level, type: r.type, airline: r.airline, logo: r.logo,
+    where_txt: la ? `au ${dirName(la.az)}, ${Math.max(0, Math.round(la.el))}° au-dessus de l'horizon` : `à ${r.dist_km} km`
+  };
+}
+
+// Carnet du ciel
+const carnetFile = join(DATA_DIR, "carnet.json");
+let carnet = null;
+try { carnet = JSON.parse(readFileSync(carnetFile, "utf8")); } catch { carnet = null; }
+const forCarnet = described.filter(f => f.in_radius).map(f => ({
+  hex: f.hex, flight: f.flight, type: f.type, type_code: f.type_code, airline: f.airline, airline_icao: f.airline_icao,
+  from_cc: f.from_cc, from_country: f.from_country, from_city: f.from_city, to_city: f.to_city,
+  route_km: f.route_km, alt_m: f.alt_m, rare: f.rare
+}));
+carnet ||= {};
+out.carnet = z.ok ? updateCarnet(carnet, forCarnet, NOW, TZ, Object.keys(TYPES).length) : summarizeCarnet(carnet, NOW, TZ, Object.keys(TYPES).length);
+writeFileSync(carnetFile, JSON.stringify(carnet));
+
+// ISS
+try { out.iss = await issInfo(DATA_DIR, HOME, NOW, TZ); } catch (e) { console.warn("ISS :", e.message); out.iss = null; }
+if (out.iss?.now) { out.iss.now.sky_x = Math.round(200 + out.iss.now.x * 170); out.iss.now.sky_y = Math.round(200 + out.iss.now.y * 170); }
+
+// Données internes inutiles à l'écran
+for (const f of out.flights) { delete f._route; delete f._ac; delete f._owner; }
+
+// Données de la carte du mode zone
+out.map_flights_js = js(out.flights.map((f, i) => [Math.round(f.lon * 1e4) / 1e4, Math.round(f.lat * 1e4) / 1e4, f.track_deg || 0, i + 1]));
+const circle = [];
+for (let i = 0; i <= 72; i++) {
+  const b = i * 5 * Math.PI / 180, d = CONFIG.rayon_km / 6371, la = CONFIG.latitude * Math.PI / 180, lo = CONFIG.longitude * Math.PI / 180;
+  const la2 = Math.asin(Math.sin(la) * Math.cos(d) + Math.cos(la) * Math.sin(d) * Math.cos(b));
+  const lo2 = lo + Math.atan2(Math.sin(b) * Math.sin(d) * Math.cos(la), Math.cos(d) - Math.sin(la) * Math.sin(la2));
+  circle.push([Math.round(lo2 * 180 / Math.PI * 1e4) / 1e4, Math.round(la2 * 180 / Math.PI * 1e4) / 1e4]);
+}
+out.map_circle_js = js(circle);
 
 // Nettoyage du cache (routes vues il y a plus de 3 jours)
 for (const [k, v] of Object.entries(cache.routes)) if (NOW - new Date(v.at) > 3 * 86400e3) delete cache.routes[k];

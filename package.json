@@ -1,0 +1,11 @@
+{
+  "name": "trmnl-radar-ciel",
+  "private": true,
+  "type": "module",
+  "description": "Radar du ciel — collecte pour le plugin TRMNL",
+  "dependencies": {
+    "pngjs": "^7.0.0",
+    "satellite.js": "^5.0.0",
+    "tz-lookup": "^6.1.25"
+  }
+}

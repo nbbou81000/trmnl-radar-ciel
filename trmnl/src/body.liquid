@@ -5,21 +5,206 @@
 {%- assign t = track -%}
 {%- assign total_n = total | default: 0 -%}
 {%- assign vue_raw = trmnl.plugin_settings.custom_fields_values.suivi_affichage | default: suivi_affichage | default: "tableau" | downcase -%}
-{%- if vue_raw contains "carte" -%}{%- assign vue = "carte" -%}{%- elsif vue_raw contains "fiche" -%}{%- assign vue = "fiche" -%}{%- else -%}{%- assign vue = "tableau" -%}{%- endif -%}
+{%- if vue_raw contains "carte" -%}{%- assign vue = "carte" -%}{%- elsif vue_raw contains "fiche" -%}{%- assign vue = "fiche" -%}{%- elsif vue_raw contains "arriv" -%}{%- assign vue = "arrivee" -%}{%- else -%}{%- assign vue = "tableau" -%}{%- endif -%}
 {%- assign carte_raw = trmnl.plugin_settings.custom_fields_values.style_carte | default: style_carte | default: "outline" | downcase -%}
 {%- if carte_raw contains "street" or carte_raw contains "rue" -%}{%- assign preset = "streets" -%}{%- elsif carte_raw contains "minimal" -%}{%- assign preset = "minimal" -%}{%- elsif carte_raw contains "blank" or carte_raw contains "pur" -%}{%- assign preset = "blank" -%}{%- else -%}{%- assign preset = "outline" -%}{%- endif -%}
 {%- assign dd = t.d -%}
 {%- assign zvue_raw = trmnl.plugin_settings.custom_fields_values.zone_affichage | default: zone_affichage | default: "tableau" | downcase -%}
-{%- if zvue_raw contains "carte" -%}{%- assign zvue = "carte" -%}{%- else -%}{%- assign zvue = "tableau" -%}{%- endif -%}
+{%- if zvue_raw contains "carnet" -%}{%- assign zvue = "carnet" -%}{%- elsif zvue_raw contains "ciel" or zvue_raw contains "regard" -%}{%- assign zvue = "ciel" -%}{%- elsif zvue_raw contains "carte" -%}{%- assign zvue = "carte" -%}{%- else -%}{%- assign zvue = "tableau" -%}{%- endif -%}
+{%- capture rare_banner -%}{%- if rare -%}<div class="rc-rare"><span class="rc-rare__tag">RARE</span><span class="rc-rare__txt">{{ rare.why }}{% if rare.airline != "" and rare.airline != nil %} · {{ rare.airline }}{% endif %} · {{ rare.where_txt }}</span></div>{%- endif -%}{%- endcapture -%}
+{%- capture plane_path -%}M0 -10 L1.6 -3.4 L10 1.6 L10 3.4 L1.6 1.4 L1.2 6.6 L3.6 8.4 L3.6 10 L0 9 L-3.6 10 L-3.6 8.4 L-1.2 6.6 L-1.6 1.4 L-10 3.4 L-10 1.6 L-1.6 -3.4 Z{%- endcapture -%}
 {%- capture title_line -%}{% if mode == "suivi" %}Suivi {{ t.flight }}{% else %}{{ place_short }} · {{ total_n }} avion{% if total_n > 1 %}s{% endif %} à {{ radius_km }} km{% endif %} · {{ updated_txt }}{% if stale %} (ancien){% endif %}{%- endcapture -%}
 
-{%- if mode == "suivi" and vue == "fiche" and dd and short != true -%}
+{%- if mode == "suivi" and vue == "arrivee" -%}
+{%- comment -%} ===================== VOL ET ARRIVÉE ===================== {%- endcomment -%}
+{%- assign ar = t.arr -%}{%- assign pf = t.profile -%}
+<div class="layout">
+  <div class="rc rc-arr{% if narrow %} rc--narrow{% endif %}{% if short %} rc--short{% endif %}">
+    <div class="rc-arr__head">
+      {%- if t.logo and t.logo != "" -%}<img class="rc-logo rc-logo--big" src="{{ t.logo }}">{%- endif -%}
+      <div class="rc-arr__id">
+        <span class="value {% if short or narrow %}value--small{% else %}value--medium{% endif %}">{{ t.flight }}{% if t.has_route %} · {{ t.from }} – {{ t.to }}{% endif %}</span>
+        {%- unless short -%}<span class="label" data-clamp="1">{{ t.airline }}{% if t.type != "" %} · {{ t.type }}{% endif %}{% if t.reg != "" %} · {{ t.reg }}{% endif %}</span>{%- endunless -%}
+      </div>
+      <span class="label label--inverted">{{ t.status_txt }}{% if t.progress_pct != nil %} · {{ t.progress_pct }} %{% endif %}</span>
+    </div>
+    {%- if pf and short != true -%}
+    <div class="rc-arr__profile">
+      <svg viewBox="0 0 1000 200" preserveAspectRatio="none">
+        <line x1="0" y1="190" x2="1000" y2="190" stroke="#000" stroke-width="2" vector-effect="non-scaling-stroke"/>
+        <polyline points="{{ pf.done }}" fill="none" stroke="#000" stroke-width="4" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
+        {%- if pf.todo != "" -%}<polyline points="{{ pf.todo }}" fill="none" stroke="#000" stroke-width="2.5" stroke-dasharray="7 6" vector-effect="non-scaling-stroke"/>{%- endif -%}
+      </svg>
+      <span class="rc-arr__dot" style="left: {{ pf.cx | divided_by: 10.0 }}%; top: {{ pf.cy | divided_by: 2.0 }}%"></span>
+      <div class="rc-arr__axis"><span class="label label--small">{{ t.from_city }}{% if t.takeoff_txt != "" %} · {{ t.takeoff_txt }}{% endif %}</span>{% if pf.max_txt != "" %}<span class="label label--small">max {{ pf.max_txt }} m</span>{% endif %}<span class="label label--small">{{ t.to_city }}{% if ar.eta_local_txt and ar.eta_local_txt != "" %} · ≈ {{ ar.eta_local_txt }} (local){% endif %}</span></div>
+    </div>
+    {%- endif -%}
+    {%- if ar -%}
+    <div class="rc-arr__dest">
+      <div class="rc-arr__time">
+        <span class="label label--small">À l'arrivée · {{ ar.city }}{% if ar.code != "" %} {{ ar.code }}{% endif %}</span>
+        {%- if ar.time_txt -%}<span class="value {% if short %}value--small{% else %}value--large{% endif %} value--tnums">{{ ar.time_txt }}</span>
+        {%- unless short -%}<span class="label label--small">{{ ar.offset_txt }}</span>{%- endunless -%}{%- endif -%}
+      </div>
+      {%- if ar.temp_txt and ar.temp_txt != "" -%}
+      <div class="rc-arr__wx">
+        <svg class="rc-wx" viewBox="0 0 48 48">{%- case ar.icon -%}
+          {%- when "soleil" -%}<circle cx="24" cy="24" r="9" fill="none" stroke="#000" stroke-width="3"/><g stroke="#000" stroke-width="3" stroke-linecap="round"><line x1="24" y1="4" x2="24" y2="9"/><line x1="24" y1="39" x2="24" y2="44"/><line x1="4" y1="24" x2="9" y2="24"/><line x1="39" y1="24" x2="44" y2="24"/><line x1="10" y1="10" x2="13" y2="13"/><line x1="35" y1="35" x2="38" y2="38"/><line x1="10" y1="38" x2="13" y2="35"/><line x1="35" y1="13" x2="38" y2="10"/></g>
+          {%- when "eclaircies" -%}<circle cx="18" cy="17" r="7" fill="none" stroke="#000" stroke-width="3"/><path d="M14 38 Q6 38 7 31 Q8 25 15 26 Q18 18 27 20 Q35 21 35 28 Q42 28 42 33 Q42 38 36 38 Z" fill="#fff" stroke="#000" stroke-width="3"/>
+          {%- when "pluie" -%}<path d="M12 30 Q4 30 5 23 Q6 17 13 18 Q16 10 25 12 Q33 13 33 20 Q41 20 41 25 Q41 30 35 30 Z" fill="#fff" stroke="#000" stroke-width="3"/><g stroke="#000" stroke-width="3" stroke-linecap="round"><line x1="15" y1="35" x2="12" y2="42"/><line x1="24" y1="35" x2="21" y2="42"/><line x1="33" y1="35" x2="30" y2="42"/></g>
+          {%- when "neige" -%}<path d="M12 28 Q4 28 5 21 Q6 15 13 16 Q16 8 25 10 Q33 11 33 18 Q41 18 41 23 Q41 28 35 28 Z" fill="#fff" stroke="#000" stroke-width="3"/><g fill="#000"><circle cx="14" cy="36" r="2.5"/><circle cx="24" cy="40" r="2.5"/><circle cx="34" cy="36" r="2.5"/></g>
+          {%- when "orage" -%}<path d="M12 28 Q4 28 5 21 Q6 15 13 16 Q16 8 25 10 Q33 11 33 18 Q41 18 41 23 Q41 28 35 28 Z" fill="#fff" stroke="#000" stroke-width="3"/><path d="M25 30 L19 39 L25 39 L21 46" fill="none" stroke="#000" stroke-width="3" stroke-linejoin="round"/>
+          {%- when "brouillard" -%}<g stroke="#000" stroke-width="3" stroke-linecap="round"><line x1="6" y1="16" x2="42" y2="16"/><line x1="10" y1="24" x2="38" y2="24"/><line x1="6" y1="32" x2="42" y2="32"/><line x1="12" y1="40" x2="36" y2="40"/></g>
+          {%- else -%}<path d="M12 34 Q4 34 5 27 Q6 21 13 22 Q16 14 25 16 Q33 17 33 24 Q41 24 41 29 Q41 34 35 34 Z" fill="#fff" stroke="#000" stroke-width="3"/>
+        {%- endcase -%}</svg>
+        <div class="rc-arr__wxtxt">
+          <span class="value {% if short %}value--xsmall{% else %}value--small{% endif %}">{{ ar.temp_txt }} · {{ ar.wx_txt }}</span>
+          {%- unless short -%}<span class="label label--small" data-clamp="2">{{ ar.wind_txt }}{% if ar.vis_txt != "" %} · {{ ar.vis_txt }}{% endif %}{% if ar.sky_txt != "" %} · {{ ar.sky_txt }}{% endif %}</span>{%- endunless -%}
+        </div>
+      </div>
+      {%- endif -%}
+    </div>
+    {%- endif -%}
+    {%- unless short -%}
+    <div class="rc-arr__foot">
+      {%- if t.over_txt and t.over_txt != "" -%}<span class="label">{% if t.pos_estimated %}Survole (estimé){% else %}Survole{% endif %} : {{ t.over_txt }}</span>{%- endif -%}
+      {%- if t.remaining_km and t.remaining_km > 0 -%}<span class="label">Reste {{ t.remaining_txt }} km{% if t.eta_txt != "" %} · arrivée vers {{ t.eta_txt }}{% endif %}</span>{%- endif -%}
+    </div>
+    {%- endunless -%}
+  </div>
+</div>
+<div class="title_bar">
+  <img class="image image-stroke" src="data:image/svg+xml;base64,{{ svg_logo | base64_encode }}" />
+  <span class="title">Radar du ciel</span>
+  <span class="instance">{{ title_line }}</span>
+</div>
+
+{%- elsif mode != "suivi" and zvue == "ciel" -%}
+{%- comment -%} ===================== OÙ REGARDER ===================== {%- endcomment -%}
+{%- assign cn = n | at_most: 3 -%}{%- if narrow -%}{%- assign cn = 1 -%}{%- endif -%}
+<div class="layout">
+  <div class="rc rc-ciel{% if narrow %} rc--narrow{% endif %}{% if short %} rc--short{% endif %}">
+    <svg class="rc-sky" viewBox="0 0 400 400">
+      <circle cx="200" cy="200" r="170" fill="none" stroke="#000" stroke-width="3"/>
+      <circle cx="200" cy="200" r="113" fill="none" stroke="#000" stroke-width="1.5" stroke-dasharray="4 7"/>
+      <circle cx="200" cy="200" r="57" fill="none" stroke="#000" stroke-width="1.5" stroke-dasharray="4 7"/>
+      <line x1="30" y1="200" x2="370" y2="200" stroke="#000" stroke-width="1" stroke-dasharray="2 8"/>
+      <line x1="200" y1="30" x2="200" y2="370" stroke="#000" stroke-width="1" stroke-dasharray="2 8"/>
+      <g font-family="Inter, sans-serif" font-weight="700" font-size="22" text-anchor="middle">
+        <text x="200" y="22">N</text><text x="388" y="208">E</text><text x="200" y="396">S</text><text x="12" y="208">O</text>
+      </g>
+      <g font-family="Inter, sans-serif" font-size="13"><text x="205" y="83">60°</text><text x="205" y="140">30°</text></g>
+      <circle cx="200" cy="200" r="4" fill="#000"/>
+      {%- if iss.now -%}
+      <g transform="translate({{ iss.now.sky_x }} {{ iss.now.sky_y }})"><circle r="10" fill="#fff" stroke="#000" stroke-width="2.5"/><line x1="-17" y1="0" x2="17" y2="0" stroke="#000" stroke-width="3"/><text x="14" y="-12" font-family="Inter, sans-serif" font-size="15" font-weight="700">ISS</text></g>
+      {%- endif -%}
+      {%- for f in flights limit: n -%}{%- if f.sky_x and f.el > -1 -%}
+      <g transform="translate({{ f.sky_x }} {{ f.sky_y }})">
+        <g transform="rotate({{ f.track_deg | default: 0 }}) scale(1.7)"><path d="{{ plane_path }}" fill="#000" stroke="#fff" stroke-width="0.9" stroke-linejoin="round"/></g>
+        <circle cx="19" cy="-19" r="11" fill="#000"/><text x="19" y="-14" text-anchor="middle" fill="#fff" font-family="Inter, sans-serif" font-size="14" font-weight="700">{{ forloop.index }}</text>
+      </g>
+      {%- endif -%}{%- endfor -%}
+    </svg>
+    <div class="rc-ciel__side">
+      {{ rare_banner }}
+      {%- unless short -%}
+      {%- if shown == 0 -%}
+      <span class="value value--small">Ciel calme</span><span class="label">Aucun avion à {{ radius_km }} km</span>
+      {%- else -%}
+      {%- assign others = shown | minus: cn -%}
+      {%- for f in flights limit: cn -%}
+      <div class="rc-ciel__item">
+        <span class="rc-badge">{{ forloop.index }}</span>
+        <div class="rc-ciel__txt">
+          <div class="rc-ciel__line">{%- if f.logo and f.logo != "" -%}<img class="rc-logo" src="{{ f.logo }}">{%- endif -%}<span class="title title--small">{{ f.flight }}{% if f.has_route %} · {{ f.from }} – {{ f.to }}{% endif %}</span></div>
+          <span class="label label--small" data-clamp="1">{% if f.el < 0 %}sous l'horizon{% else %}{{ f.dir_txt | capitalize }}, {{ f.el }}°{% endif %}{% if f.trend_txt != "" %} · {{ f.trend_txt }}{% endif %}{% if f.has_route %} · {{ f.from_city }} → {{ f.to_city }}{% endif %}</span>
+        </div>
+      </div>
+      {%- endfor -%}
+      {%- if others > 0 -%}<span class="label label--small">et {{ others }} autre{% if others > 1 %}s{% endif %} sur la carte du ciel</span>{%- endif -%}
+      {%- endif -%}
+      {%- endunless -%}
+      {%- if next_pass -%}
+      <div class="rc-ciel__next">
+        <span class="label label--small">Prochain passage au plus près</span>
+        <span class="value {% if short or narrow %}value--xsmall{% else %}value--small{% endif %}">{{ next_pass.in_txt }}{% if next_pass.zenith %} · presque à la verticale{% endif %}</span>
+        <div class="rc-ciel__line">{%- if next_pass.logo != "" and narrow != true -%}<img class="rc-logo" src="{{ next_pass.logo }}">{%- endif -%}<span class="label" data-clamp="1">{{ next_pass.flight }}{% if next_pass.type != "" %} · {{ next_pass.type }}{% endif %} · {{ next_pass.el_max }}° au {{ next_pass.dir_txt }}</span></div>
+      </div>
+      {%- endif -%}
+      {%- unless short or narrow -%}
+      <div class="rc-ciel__iss">
+        {%- if iss.now -%}<span class="title title--small">ISS visible maintenant</span>
+        {%- elsif iss.next -%}<span class="title title--small">ISS visible {{ iss.next.when }}</span><span class="label label--small">{{ iss.next.txt }}</span>
+        {%- elsif iss.none_txt -%}<span class="label label--small">ISS : {{ iss.none_txt | downcase }}</span>{%- endif -%}
+      </div>
+      {%- endunless -%}
+    </div>
+  </div>
+</div>
+<div class="title_bar">
+  <img class="image image-stroke" src="data:image/svg+xml;base64,{{ svg_logo | base64_encode }}" />
+  <span class="title">Radar du ciel</span>
+  <span class="instance">{{ title_line }}</span>
+</div>
+
+{%- elsif mode != "suivi" and zvue == "carnet" -%}
+{%- comment -%} ===================== CARNET DU CIEL ===================== {%- endcomment -%}
+{%- assign cb = carnet -%}
+<div class="layout">
+  <div class="rc rc-carnet{% if narrow %} rc--narrow{% endif %}{% if short %} rc--short{% endif %}">
+    <div class="rc-carnet__head">
+      <span class="value {% if short or narrow %}value--small{% else %}value--medium{% endif %}">Carnet du ciel</span>
+      {%- unless narrow -%}<span class="label">{{ cb.date_txt }} · semaine {{ cb.week }}</span>{%- endunless -%}
+    </div>
+    <div class="rc-carnet__stats">
+      <div><span class="label label--small">Survols aujourd'hui</span><span class="value value--tnums">{{ cb.today | default: 0 }}</span>{% unless short %}<span class="label label--small">{{ cb.delta_txt }}</span>{% endunless %}</div>
+      <div><span class="label label--small">Types d'avions</span><span class="value value--tnums">{{ cb.types | default: 0 }}</span>{% unless short %}<span class="label label--small">sur {{ cb.types_total }} connus</span><div class="rc-bar"><div class="rc-bar__fill" style="width: {{ cb.types_pct }}%"></div></div>{% endunless %}</div>
+      {%- unless narrow -%}
+      <div><span class="label label--small">Compagnies</span><span class="value value--tnums">{{ cb.airlines | default: 0 }}</span>{% unless short %}<span class="label label--small">depuis le {{ cb.since_txt }}</span>{% endunless %}</div>
+      <div><span class="label label--small">Pays de départ</span><span class="value value--tnums">{{ cb.countries | default: 0 }}</span></div>
+      {%- endunless -%}
+    </div>
+    {%- unless short -%}
+    <div class="rc-carnet__body">
+      <div class="rc-carnet__col">
+        <span class="label label--small">Prise du jour</span>
+        {%- if cb.best -%}<span class="title" data-clamp="1">{{ cb.best.label }}</span><span class="label" data-clamp="1">{{ cb.best.sub }}</span>{%- else -%}<span class="label">Pas encore d'avion aujourd'hui</span>{%- endif -%}
+        {%- if cb.longest -%}<span class="label label--small rc-gap">Plus longue route</span><span class="title title--small" data-clamp="1">{{ cb.longest.txt }} · {{ cb.longest.km_txt }} km</span>{%- endif -%}
+        {%- if cb.news.size > 0 -%}<span class="label label--small rc-gap">Nouveaux dans la collection</span><span class="label" data-clamp="2">{{ cb.news | join: " · " }}</span>{%- endif -%}
+      </div>
+      {%- unless narrow -%}
+      <div class="rc-carnet__col">
+        <span class="label label--small">Survols par heure aujourd'hui{% if cb.peak_txt != "" %} · {{ cb.peak_txt }}{% endif %}</span>
+        <svg class="rc-hist" viewBox="0 0 480 130" preserveAspectRatio="none">
+          {%- for b in cb.bars -%}{%- assign bh = b.pct | times: 1 -%}{%- if b.v > 0 and bh < 3 -%}{%- assign bh = 3 -%}{%- endif -%}{%- assign by = 110 | minus: bh -%}{%- assign bx = b.h | times: 20 | plus: 2 -%}
+          <rect x="{{ bx }}" y="{{ by }}" width="16" height="{{ bh }}" {% if b.now %}fill="#fff" stroke="#000" stroke-width="2"{% else %}fill="#000"{% endif %}/>
+          {%- endfor -%}
+          <line x1="0" y1="110.5" x2="480" y2="110.5" stroke="#000" stroke-width="1.5"/>
+          <g font-family="Inter, sans-serif" font-size="13"><text x="2" y="127">0 h</text><text x="122" y="127">6 h</text><text x="242" y="127">12 h</text><text x="362" y="127">18 h</text></g>
+        </svg>
+        {%- if iss.next -%}<span class="label label--small rc-gap">ISS visible {{ iss.next.when }} · {{ iss.next.txt }}</span>{%- endif -%}
+      </div>
+      {%- endunless -%}
+    </div>
+    {%- endunless -%}
+  </div>
+</div>
+<div class="title_bar">
+  <img class="image image-stroke" src="data:image/svg+xml;base64,{{ svg_logo | base64_encode }}" />
+  <span class="title">Radar du ciel</span>
+  <span class="instance">Collection commencée le {{ cb.since_txt }} · {{ updated_txt }}</span>
+</div>
+
+{%- elsif mode == "suivi" and vue == "fiche" and dd and short != true -%}
 {%- comment -%} ===================== FICHE DÉTAILLÉE DU VOL ===================== {%- endcomment -%}
 <div class="layout layout--col layout--top layout--stretch-x gap">
   <div class="flex flex--row flex--between flex--center-y w--full">
+    <div class="flex flex--row flex--center-y gap">
+    {%- if t.logo and t.logo != "" -%}<img class="rc-logo rc-logo--big" src="{{ t.logo }}">{%- endif -%}
     <div class="flex flex--col">
       <span class="value {% if narrow %}value--small{% else %}value--medium{% endif %}">{{ t.flight }}{% if t.has_route %} · {{ t.from }} – {{ t.to }}{% endif %}</span>
       <span class="label" data-clamp="1">{{ dd.airline }}{% if dd.callsign != "" %} · {{ dd.callsign }}{% endif %}</span>
+    </div>
     </div>
     <div class="flex flex--col text--right flex--right">
       <span class="label label--inverted">{% if dd.emergency %}URGENCE {{ dd.squawk_txt }}{% else %}{{ t.status_txt }}{% endif %}</span>
@@ -89,9 +274,11 @@
         <div class="item">
           <div class="meta"></div>
           <div class="content">
+            {%- if t.logo and t.logo != "" -%}<img class="rc-logo" src="{{ t.logo }}">{%- endif -%}
             <span class="value value--small">{{ t.flight }}</span>
             <span class="label">{% if t.has_route %}{{ t.from }} – {{ t.to }} · {% endif %}{% if t.map_focus_txt and t.map_focus_txt != "" %}{{ t.map_focus_txt }}{% else %}{{ t.status_txt }}{% endif %}{% if t.progress_pct != nil %} · {{ t.progress_pct }} %{% endif %}</span>
             {%- if t.pos_estimated and t.fix_txt != "" -%}<span class="label label--small">Dernier signal à {{ t.fix_txt }}</span>{%- endif -%}
+            {%- if t.arr and t.arr.time_txt -%}<span class="label label--small" data-clamp="1">{{ t.arr.city }} : {{ t.arr.time_txt }}{% if t.arr.temp_txt and t.arr.temp_txt != "" %} · {{ t.arr.temp_txt }}, {{ t.arr.wx_txt }}{% endif %}</span>{%- endif -%}
           </div>
         </div>
         {%- if t.over_txt and t.over_txt != "" -%}
@@ -221,6 +408,7 @@
     {%- unless short and narrow -%}
     <div id="rc-zcard-{{ sz }}" class="absolute {% if narrow %}bottom--2 left--2{% else %}top--2 left--2{% endif %} z--2 {% if short or narrow %}p--2{% else %}p--4{% endif %} w--max-60 bg--canvas outline outline--muted">
       <div class="flex flex--col gap--small">
+        {{ rare_banner }}
         {%- if shown == 0 -%}
         <div class="item"><div class="meta"></div><div class="content">
           <span class="value value--small">Ciel calme</span>
@@ -232,7 +420,7 @@
           <div class="meta"><span class="index">{{ forloop.index }}</span></div>
           <div class="content">
             <span class="title title--small">{{ f.flight }}{% if f.has_route %} · {{ f.from }} – {{ f.to }}{% endif %}</span>
-            {%- if f.has_route and f.from_city != "" -%}<span class="label label--small" data-clamp="1">{{ f.from_city }} → {{ f.to_city }}</span>{%- endif -%}
+            {%- if f.has_route or f.logo != "" -%}<div class="rc-ciel__line">{%- if f.logo and f.logo != "" -%}<img class="rc-logo rc-logo--small" src="{{ f.logo }}">{%- endif -%}{%- if f.has_route and f.from_city != "" -%}<span class="label label--small" data-clamp="1">{{ f.from_city }} → {{ f.to_city }}</span>{%- endif -%}</div>{%- endif -%}
             {%- unless short -%}<span class="label label--small" data-clamp="1">{{ f.type }} · {{ f.alt_txt }} m · {{ f.dist_km }} km</span>{%- endunless -%}
           </div>
         </div>
@@ -444,6 +632,7 @@
 </div>
 {%- else -%}
 <div class="layout layout--col layout--top layout--stretch-x gap--small">
+  {{ rare_banner }}
   {%- if shown == 0 -%}
   <div class="flex flex--col flex--center gap h--full w--full">
     <span class="value value--large">Ciel calme</span>
@@ -456,7 +645,7 @@
   {%- if narrow -%}
   <div class="flex flex--col flex--left w--full">
     <div class="flex flex--row flex--between w--full flex--center-y">
-      <span class="value value--small">{{ f.flight }}</span>
+      <div class="rc-ciel__line">{%- if f.logo and f.logo != "" -%}<img class="rc-logo" src="{{ f.logo }}">{%- endif -%}<span class="value value--small">{{ f.flight }}</span></div>
       <span class="value value--small">{{ route_txt }}</span>
     </div>
     <span class="label label--small" data-clamp="1">{{ who_txt }}</span>
@@ -465,7 +654,7 @@
   {%- else -%}
   <div class="grid grid--cols-12 w--full">
     <div class="col--span-4 flex flex--col flex--left">
-      <span class="value value--small">{{ f.flight }}</span>
+      <div class="rc-ciel__line">{%- if f.logo and f.logo != "" -%}<img class="rc-logo" src="{{ f.logo }}">{%- endif -%}<span class="value value--small">{{ f.flight }}</span></div>
       <span class="label label--small" data-clamp="1">{{ who_txt }}</span>
     </div>
     <div class="col--span-4 flex flex--col flex--left">

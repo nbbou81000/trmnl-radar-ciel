@@ -10,6 +10,11 @@ Affiche sur un TRMNL les avions qui survolent Cagnac-les-Mines (rayon de 30 km),
 - **Quatre styles de carte** : Contours, Rues, Minimal, Épuré.
 - **Carte au-dessus de chez moi** (option) : le cercle de recherche, la maison et les avions orientés selon leur cap, numérotés comme dans la liste. Le réglage « Style de la carte » s'applique aux deux cartes.
 - **Suivis mis de côté** : un suivi interrompu avant l'atterrissage reste dans la télécommande pour être repris plus tard, avec sa trace.
+- **Où regarder** (écran au-dessus de chez moi) : carte du ciel vue du sol — chaque avion placé selon sa direction et sa hauteur au-dessus de l'horizon —, tendance (se rapproche, s'éloigne), prochain passage au plus près et prochain passage visible de l'ISS.
+- **Carnet du ciel** (écran au-dessus de chez moi) : survols du jour, collection de types d'avions, compagnies et pays de départ, prise du jour, plus longue route, nouveautés et survols par heure.
+- **Alertes « rare »** : bandeau sur les écrans au-dessus de chez moi quand passe un avion militaire ou d'État, un appareil hors du commun (A380, Beluga, A400M…), un hélicoptère du SAMU ou un code d'urgence.
+- **Logos des compagnies**, convertis en noir pur pour l'e-ink (tableau classique, cartes, Où regarder, fiches).
+- **Vol et arrivée** (écran de suivi) : profil d'altitude du vol, heure locale et météo réelle (METAR) à l'aéroport d'arrivée.
 - **Zoom automatique** : après le décollage, en approche (moins de 120 km de l'arrivée ou sous 3 500 m) et au sol, la carte zoome sur l'avion et l'aéroport ; le reste du temps, elle montre tout le trajet.
 - **Unités** : mètres, km/h, m/s.
 - **Données** : position ADS-B via [adsb.lol](https://adsb.lol) (ODbL), routes et compagnies via [adsbdb.com](https://www.adsbdb.com). Tout est gratuit et sans clé.
@@ -121,6 +126,14 @@ Modifie `config.json` directement sur GitHub (icône crayon), puis **Commit chan
 | `rayon_km` | Rayon de recherche |
 | `vols_max` | Nombre d'avions conservés (5 au maximum à l'écran) |
 | `inclure_au_sol` | `true` pour garder aussi les avions au sol |
+
+## Sources des nouveautés
+
+- Logos : pics.avs.io (logos horizontaux) et, en secours, le dépôt public Jxck-S/airline-logos ; convertis une fois puis stockés dans la branche `data` (dossier `logos/`).
+- Météo à l'arrivée : METAR officiel d'aviationweather.gov.
+- ISS : éléments orbitaux de Celestrak, passages calculés localement (station éclairée et ciel nocturne à Cagnac).
+- Appareils militaires : indicateur fourni par adsb.lol.
+- Fuseaux horaires : bibliothèque tz-lookup (hors ligne).
 
 ## Données géographiques
 

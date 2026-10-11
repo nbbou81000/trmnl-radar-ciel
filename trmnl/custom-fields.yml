@@ -11,20 +11,23 @@
 - keyname: zone_affichage
   field_type: select
   name: Écran au-dessus de chez moi
-  description: Tableau des avions proches (dans le style choisi) ou carte avec le rayon de recherche et les avions orientés selon leur cap.
+  description: Tableau des avions proches (dans le style choisi), carte avec le rayon de recherche, « Où regarder » (carte du ciel, prochain passage, ISS) ou Carnet du ciel (collection et statistiques).
   options:
   - "Tableau: tableau"
   - "Carte: carte"
+  - "Où regarder: ciel"
+  - "Carnet du ciel: carnet"
   default: tableau
 
 - keyname: suivi_affichage
   field_type: select
   name: Écran pendant le suivi d'un vol
-  description: Tableau de suivi (dans le style choisi), carte avec la position de l'avion, ou fiche détaillée du vol et de l'appareil.
+  description: Tableau de suivi (dans le style choisi), carte avec la position de l'avion, fiche détaillée du vol et de l'appareil, ou « Vol et arrivée » (profil d'altitude, heure et météo à destination).
   options:
   - "Tableau de suivi: tableau"
   - "Carte: carte"
   - "Fiche détaillée: fiche"
+  - "Vol et arrivée: arrivee"
   default: tableau
 
 - keyname: style_carte
