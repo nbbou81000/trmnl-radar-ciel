@@ -63,6 +63,13 @@ function haversine(lat1, lon1, lat2, lon2) {
   return 2 * R * Math.asin(Math.sqrt(a));
 }
 const cleanCity = s => String(s || "").split(/[\/,]/)[0].trim();
+// Nom de ville court et lisible : « Frankfurt am Main » → « Frankfurt », « Lanzarote Island » → « Lanzarote »,
+// « Palma De Mallorca » → « Palma de Mallorca »
+const tidyCity = s => cleanCity(s)
+  .replace(/\s+(am|an der|im|ob der|upon|on)\s+\S.*$/i, "")
+  .replace(/\s+(Island|Islands|City)$/i, "")
+  .replace(/(\S\s)(De|Del|Da|Do|Di|Dos|La|Le|Les|Du|Des|Of)(?=\s)/g, (m, a, b) => a + b.toLowerCase())
+  .trim();
 
 // ---------- routes et appareils (adsbdb, avec cache) ----------
 async function lookupRoute(callsign) {
@@ -143,7 +150,7 @@ async function describe(ac) {
     type: TYPES[typeCode] || typeCode || "",
     type_code: typeCode,
     from: route?.from || "", to: route?.to || "",
-    from_city: route?.from_city || "", to_city: route?.to_city || "",
+    from_city: tidyCity(route?.from_city), to_city: tidyCity(route?.to_city),
     has_route: !!(route?.from && route?.to),
     on_ground: onGround,
     alt_m: alt === null ? null : Math.round(alt),
@@ -280,7 +287,7 @@ async function trackScreen() {
     airline: f?.airline || route?.airline || "",
     type: f?.type || track.last?.type || "", reg: f?.reg || track.last?.reg || "",
     from: route?.from || "", to: route?.to || "",
-    from_city: route?.from_city || "", to_city: route?.to_city || "",
+    from_city: tidyCity(route?.from_city), to_city: tidyCity(route?.to_city),
     has_route: !!(route?.from && route?.to),
     until: track.until || ""
   };

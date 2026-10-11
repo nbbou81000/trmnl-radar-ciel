@@ -232,6 +232,7 @@
           <div class="meta"><span class="index">{{ forloop.index }}</span></div>
           <div class="content">
             <span class="title title--small">{{ f.flight }}{% if f.has_route %} · {{ f.from }} – {{ f.to }}{% endif %}</span>
+            {%- if f.has_route and f.from_city != "" -%}<span class="label label--small" data-clamp="1">{{ f.from_city }} → {{ f.to_city }}</span>{%- endif -%}
             {%- unless short -%}<span class="label label--small" data-clamp="1">{{ f.type }} · {{ f.alt_txt }} m · {{ f.dist_km }} km</span>{%- endunless -%}
           </div>
         </div>
