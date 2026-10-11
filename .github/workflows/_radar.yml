@@ -13,6 +13,9 @@ on:
       jusqu_au:
         type: string
         default: ""
+      zoom:
+        type: string
+        default: ""
 
 permissions:
   contents: write
@@ -43,6 +46,7 @@ jobs:
           ACTION: ${{ inputs.action }}
           TRACK_QUERY: ${{ inputs.vol }}
           TRACK_UNTIL: ${{ inputs.jusqu_au }}
+          ZOOM: ${{ inputs.zoom }}
         run: node scripts/radar.mjs | tee -a "$GITHUB_STEP_SUMMARY"
 
       - name: Publier sur la branche data

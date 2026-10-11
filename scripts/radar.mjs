@@ -3,7 +3,8 @@
 //
 // Variables d'environnement :
 //   DATA_DIR      dossier où lire/écrire flights.json, cache.json, track.json
-//   ACTION        "actualiser" (défaut) | "suivre" | "arreter"
+//   ACTION        "actualiser" (défaut) | "suivre" | "arreter" | "oublier" | "zoom"
+//   ZOOM          "+1", "-1" ou "auto" pour ACTION=zoom (s'applique à la carte du mode en cours)
 //   TRACK_QUERY   vol à suivre (AF6125, AFR6125 ou F-HPNA) pour ACTION=suivre
 //   TRACK_UNTIL   date de fin facultative (AAAA-MM-JJ) pour ACTION=suivre
 
@@ -34,6 +35,8 @@ const cache = readJson("cache.json", { routes: {}, aircraft: {} });
 cache.routes ||= {}; cache.aircraft ||= {};
 let track = readJson("track.json", null);
 let history = readJson("history.json", []);
+// Réglage du zoom des cartes (télécommande) : décalage par rapport au cadrage automatique
+const prefs = Object.assign({ zoom_zone: 0, zoom_suivi: 0 }, readJson("prefs.json", {}) || {});
 if (!Array.isArray(history)) history = [];
 const normQ = q => String(q || "").toUpperCase().replace(/[\s-]/g, "");
 
@@ -129,6 +132,8 @@ async function describe(ac) {
   const flight = route?.callsign_iata || (isRegCallsign ? ac.r : callsign) || ac.r || ac.hex.toUpperCase();
   const ownerName = owner?.owner && /^private$/i.test(owner.owner) ? "Privé" : owner?.owner;
   const typeCode = ac.t || "";
+  const freshPos = Number.isFinite(ac.lat) && Number.isFinite(ac.lon);
+  const lastPos = !freshPos && ac.lastPosition && Number.isFinite(ac.lastPosition.lat) && Number.isFinite(ac.lastPosition.lon) ? ac.lastPosition : null;
   const vrTxt = vr === null ? "-" : vr > 0 ? `+${Math.round(vr)}` : vr < 0 ? `${Math.round(vr)}` : "0";
   const o = {
     flight,
@@ -150,7 +155,10 @@ async function describe(ac) {
     vr_ms: vr === null ? null : Math.round(vr),
     vr_txt: vrTxt,
     vr_dir: vr === null ? "inconnu" : vr > 0 ? "montee" : vr < 0 ? "descente" : "palier",
-    lat: ac.lat, lon: ac.lon,
+    // Sans position récente, adsb.lol ne donne plus lat/lon mais une « lastPosition »
+    lat: freshPos ? ac.lat : lastPos ? lastPos.lat : null,
+    lon: freshPos ? ac.lon : lastPos ? lastPos.lon : null,
+    pos_age_s: freshPos ? (Number(ac.seen_pos) || 0) : lastPos ? (Number(lastPos.seen_pos) || 0) : null,
     _route: route, _ac: ac, _owner: owner
   };
   return o;
@@ -239,6 +247,24 @@ function unwrap(pts) {
   return out;
 }
 const js = v => JSON.stringify(v);
+function gcPoint(a, b, frac) {
+  if (frac <= 0) return { lat: a.lat, lon: a.lon };
+  const t = Math.PI / 180, R2D = 180 / Math.PI;
+  const [lat1, lon1, lat2, lon2] = [a.lat * t, a.lon * t, b.lat * t, b.lon * t];
+  const d = 2 * Math.asin(Math.sqrt(Math.sin((lat2 - lat1) / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin((lon2 - lon1) / 2) ** 2));
+  if (!(d > 1e-9)) return { lat: a.lat, lon: a.lon };
+  const f = Math.min(1, frac), A = Math.sin((1 - f) * d) / Math.sin(d), B = Math.sin(f * d) / Math.sin(d);
+  const x = A * Math.cos(lat1) * Math.cos(lon1) + B * Math.cos(lat2) * Math.cos(lon2);
+  const y = A * Math.cos(lat1) * Math.sin(lon1) + B * Math.cos(lat2) * Math.sin(lon2);
+  const z = A * Math.sin(lat1) + B * Math.sin(lat2);
+  return { lat: Math.atan2(z, Math.sqrt(x * x + y * y)) * R2D, lon: Math.atan2(y, x) * R2D };
+}
+function bearing(a, b) {
+  const t = Math.PI / 180, la1 = a.lat * t, la2 = b.lat * t, dl = (b.lon - a.lon) * t;
+  const y = Math.sin(dl) * Math.cos(la2), x = Math.cos(la1) * Math.sin(la2) - Math.sin(la1) * Math.cos(la2) * Math.cos(dl);
+  return Math.round((Math.atan2(y, x) * 180 / Math.PI + 360) % 360);
+}
+const okPt = p => Array.isArray(p) && Number.isFinite(p[0]) && Number.isFinite(p[1]);
 
 async function trackScreen() {
   const { ac, route: r0 } = await findTracked(track.query);
@@ -259,15 +285,49 @@ async function trackScreen() {
     until: track.until || ""
   };
 
+  // La trace ne garde que des points valides (corrige les traits vers 0°/0°)
+  track.trail = (track.trail || []).filter(okPt);
+  const okRoute = t.has_route && [route.from_lat, route.from_lon, route.to_lat, route.to_lon].every(Number.isFinite);
+  const A = okRoute ? { lat: route.from_lat, lon: route.from_lon } : null;
+  const B = okRoute ? { lat: route.to_lat, lon: route.to_lon } : null;
+  const hasFix = !!f && Number.isFinite(f.lat) && Number.isFinite(f.lon);
+  const freshFix = hasFix && (f.pos_age_s ?? 0) <= 120;
+
   let status;
-  if (f && !f.on_ground) { status = "en_vol"; track.seen_airborne = true; track.landed_at = null; }
+  if (f && !f.on_ground) { status = freshFix ? "en_vol" : "signal_perdu"; track.seen_airborne = true; track.landed_at = null; }
   else if (f && f.on_ground) status = track.seen_airborne ? "atterri" : "au_sol";
   else status = track.seen_airborne ? "signal_perdu" : "attente";
 
+  // Dernière position réelle connue (même ancienne), et dernière vitesse fiable
+  if (hasFix && !f.on_ground) {
+    const at = new Date(NOW.getTime() - (f.pos_age_s || 0) * 1000);
+    if (!track.fix || at > new Date(track.fix.at)) track.fix = { lat: f.lat, lon: f.lon, at: at.toISOString() };
+  }
+  if (!track.fix && track.last && Number.isFinite(track.last.lat) && Number.isFinite(track.last.lon) && track.last.seen)
+    track.fix = { lat: track.last.lat, lon: track.last.lon, at: track.last.seen };
+  if (f && !f.on_ground && Number.isFinite(f.speed_kmh) && f.speed_kmh > 150) track.speed_kmh = f.speed_kmh;
+  if (f && !f.on_ground && Number.isFinite(f.alt_m) && f.alt_m > 0) track.alt_m = f.alt_m;
+
   // Progression
-  let pos = f ? { lat: f.lat, lon: f.lon } : track.last?.lat ? { lat: track.last.lat, lon: track.last.lon } : null;
+  let pos = freshFix ? { lat: f.lat, lon: f.lon } : (f && f.on_ground && hasFix) ? { lat: f.lat, lon: f.lon } : track.fix ? { lat: track.fix.lat, lon: track.fix.lon } : null;
+  let estimated = false;
+  // Signal perdu (océan, zone sans récepteur) : on estime la position sur la route,
+  // à partir de la dernière position réelle, de la dernière vitesse et du temps écoulé.
+  if (status === "signal_perdu" && track.fix && B) {
+    const remLast = haversine(track.fix.lat, track.fix.lon, B.lat, B.lon);
+    const sp = track.speed_kmh || 820;
+    const hours = Math.max(0, (NOW - new Date(track.fix.at)) / 3600e3);
+    if (remLast < 40) status = "atterri";
+    else if (sp * hours < remLast - 25) {
+      pos = gcPoint(track.fix, B, (sp * hours) / remLast); estimated = true; status = "estime";
+    } else {
+      const landingAt = new Date(track.fix.at).getTime() + (remLast / sp) * 3600e3 + 10 * 60e3;
+      if (NOW.getTime() > landingAt + 20 * 60e3) { status = "arrivee_probable"; pos = { lat: B.lat, lon: B.lon }; }
+      else { pos = gcPoint(track.fix, B, (remLast - 25) / remLast); estimated = true; status = "estime"; }
+    }
+  }
   let pct = null, remaining = null, eta = null;
-  if (t.has_route && [route.from_lat, route.from_lon, route.to_lat, route.to_lon].every(Number.isFinite) && pos && Number.isFinite(pos.lat) && Number.isFinite(pos.lon)) {
+  if (okRoute && pos && Number.isFinite(pos.lat) && Number.isFinite(pos.lon)) {
     const done = haversine(route.from_lat, route.from_lon, pos.lat, pos.lon);
     const rem = haversine(pos.lat, pos.lon, route.to_lat, route.to_lon);
     pct = Math.max(0, Math.min(100, Math.round(100 * done / (done + rem || 1))));
@@ -277,40 +337,46 @@ async function trackScreen() {
     t.route_doubt = status === "en_vol" && done + rem > total * 1.35 + 150;
     if (status === "signal_perdu" && rem < 40) status = "atterri";
     if (status === "en_vol" && f.speed_kmh > 150) eta = hm(new Date(NOW.getTime() + (rem / f.speed_kmh) * 3600e3 + 8 * 60e3));
+    if (status === "estime") eta = hm(new Date(NOW.getTime() + (rem / (track.speed_kmh || 820)) * 3600e3 + 8 * 60e3));
   }
-  if (status === "atterri") { pct = 100; remaining = 0; track.landed_at ||= NOW.toISOString(); }
+  if (status === "atterri" || status === "arrivee_probable") { pct = 100; remaining = 0; track.landed_at ||= NOW.toISOString(); }
   if (status === "au_sol" && pct === null) pct = 0;
 
-  const labels = { en_vol: "En vol", au_sol: "Au sol", atterri: "Atterri", signal_perdu: "Signal perdu", attente: "Pas encore détecté" };
+  const labels = { en_vol: "En vol", au_sol: "Au sol", atterri: "Atterri", signal_perdu: "Signal perdu", attente: "Pas encore détecté",
+    estime: "Position estimée", arrivee_probable: "Arrivée probable" };
+  const flapStatus = { en_vol: "EN VOL", au_sol: "AU SOL", atterri: "ATTERRI", signal_perdu: "SANS SIGNAL", attente: "EN ATTENTE", estime: "ESTIME", arrivee_probable: "ARRIVE" };
   Object.assign(t, {
     status, status_txt: labels[status],
     progress_pct: pct, progress_txt: pct === null ? "-" : `${pct} %`,
     remaining_km: remaining, remaining_txt: remaining === null ? "-" : thousands(remaining),
     eta_txt: eta || "",
-    alt_txt: f && !f.on_ground ? f.alt_txt : "-", speed_txt: f ? f.speed_txt : "-",
+    alt_txt: f && !f.on_ground && Number.isFinite(f.alt_m) ? f.alt_txt : (status === "estime" && track.alt_m ? `≈ ${thousands(track.alt_m)}` : "-"),
+    speed_txt: f && Number.isFinite(f.speed_kmh) ? f.speed_txt : (status === "estime" && track.speed_kmh ? `≈ ${Math.round(track.speed_kmh)}` : "-"),
     track_txt: f ? f.track_txt : "-", vr_txt: f && !f.on_ground ? f.vr_txt : "-", vr_dir: f ? f.vr_dir : "inconnu",
-    last_seen_txt: f ? hm(NOW) : track.last?.seen ? hm(new Date(track.last.seen)) : "",
+    last_seen_txt: freshFix ? hm(NOW) : track.fix ? hm(new Date(track.fix.at)) : "",
+    pos_estimated: estimated,
+    fix_txt: track.fix ? hm(new Date(track.fix.at)) : "",
     // segments pour la barre en points (style LED) : 30 pas
     progress_steps: pct === null ? 0 : Math.round(pct * 30 / 100)
   });
   // Ce que l'avion survole (seulement en vol ou au dernier point connu)
-  const over = (status === "en_vol" || status === "signal_perdu") && pos ? overflown(pos.lat, pos.lon) : { kind: "inconnu", txt: "" };
+  const over = (status === "en_vol" || status === "signal_perdu" || status === "estime") && pos ? overflown(pos.lat, pos.lon) : { kind: "inconnu", txt: "" };
   t.over_txt = over.txt || "";
   t.over_kind = over.kind;
 
   t.flap = [
-    flapLine(`${t.flight} ${t.status_txt}`),
+    flapLine(`${t.flight} ${flapStatus[status] || ""}`),
     flapLine(`DE   ${t.from || "---"} ${fitWords(t.from_city, 11)}`),
     flapLine(`VERS ${t.to || "---"} ${fitWords(t.to_city, 11)}`),
     flapLine(t.over_txt ? `SUR ${fitWords(t.over_txt.replace(/^Près de /, "").replace(/,.*$/, ""), 16)}` : ""),
-    flapLine(status === "en_vol" ? `ALT ${f.alt_m}M ${f.speed_kmh}KMH` : t.type || ""),
+    flapLine((status === "en_vol" || (status === "estime" && f && Number.isFinite(f.alt_m))) ? `ALT ${f.alt_m}M ${f.speed_kmh}KMH` : t.type || ""),
     flapLine(pct === null ? "" : `${pct}% RESTE ${remaining}KM`),
     flapLine(eta ? `ARRIVEE VERS ${eta}` : status === "atterri" ? "BIENVENUE" : "")
   ];
 
   // Trace réellement parcourue (un point par actualisation)
   track.trail ||= [];
-  if (f && !f.on_ground) {
+  if (freshFix && !f.on_ground) {
     const p = [Math.round(f.lon * 1000) / 1000, Math.round(f.lat * 1000) / 1000];
     const q = track.trail[track.trail.length - 1];
     if (!q || q[0] !== p[0] || q[1] !== p[1]) track.trail.push(p);
@@ -318,30 +384,35 @@ async function trackScreen() {
   }
 
   // Données de la carte
-  const A = t.has_route && Number.isFinite(route.from_lat) && Number.isFinite(route.from_lon) ? { lat: route.from_lat, lon: route.from_lon } : null;
-  const B = t.has_route && Number.isFinite(route.to_lat) && Number.isFinite(route.to_lon) ? { lat: route.to_lat, lon: route.to_lon } : null;
-  let done = [], todo = [];
+  let done = [], est = [], todo = [];
   const trail = track.trail.map(([lon, lat]) => [lon, lat]);
   if (status === "attente" || status === "au_sol") {
     if (A && B) todo = greatCircle(A, B, 60);
   } else {
-    const first = trail[0] ? { lon: trail[0][0], lat: trail[0][1] } : pos;
+    const realEnd = estimated ? track.fix : pos;
+    const first = trail[0] ? { lon: trail[0][0], lat: trail[0][1] } : realEnd;
     if (A && first) done = greatCircle(A, first, 20).concat(trail.slice(1));
-    else done = trail;
-    if (pos && done.length) done.push([pos.lon, pos.lat]);
-    if (B && pos && status !== "atterri") todo = greatCircle(pos, B, 40);
+    else done = trail.slice();
+    if (realEnd && done.length) done.push([realEnd.lon, realEnd.lat]);
+    if (estimated) est = greatCircle(track.fix, pos, 16);
+    if (B && pos && status !== "atterri" && status !== "arrivee_probable") todo = greatCircle(pos, B, 40);
   }
-  const all = unwrap(done.concat(todo));
-  const doneU = all.slice(0, done.length), todoU = all.slice(Math.max(0, done.length - 1));
+  const all = unwrap(done.concat(est, todo)).filter(okPt);
+  const nD = done.length, nE = est.length;
+  const doneU = all.slice(0, nD), estU = nE ? all.slice(Math.max(0, nD - 1), nD + nE) : [], todoU = all.slice(Math.max(0, nD + nE - 1));
   t.map_done_js = js(doneU.length > 1 ? doneU : []);
-  t.map_todo_js = js(todoU.length > 1 ? (done.length ? todoU : all) : []);
-  const posU = pos && status !== "attente" && status !== "au_sol" ? (doneU[doneU.length - 1] || [pos.lon, pos.lat]) : null;
+  t.map_est_js = js(estU.length > 1 ? estU : []);
+  t.map_todo_js = js(todoU.length > 1 ? (nD + nE ? todoU : all) : []);
+  t.map_estimated = estimated;
+  const posU = pos && status !== "attente" && status !== "au_sol"
+    ? (estimated ? (estU[estU.length - 1] || [pos.lon, pos.lat]) : status === "arrivee_probable" ? (all[all.length - 1] || [pos.lon, pos.lat]) : (doneU[doneU.length - 1] || [pos.lon, pos.lat]))
+    : null;
   t.map_pos_js = js(posU);
   const fromU = A ? (all[0] || [A.lon, A.lat]) : null;
   const toU = B ? (all[all.length - 1] || [B.lon, B.lat]) : null;
   t.map_from_js = js(fromU);
   t.map_to_js = js(toU);
-  t.map_heading = f && Number.isFinite(f.track_deg) ? f.track_deg : 0;
+  t.map_heading = !estimated && f && Number.isFinite(f.track_deg) ? f.track_deg : (pos && B ? bearing(pos, B) : (f && Number.isFinite(f.track_deg) ? f.track_deg : 0));
   t.has_map = !!(posU || (fromU && toU));
 
   // Cadrage : près d'un aéroport (montée après décollage, approche, au sol),
@@ -350,16 +421,16 @@ async function trackScreen() {
   const dFrom = A && pos ? haversine(A.lat, A.lon, pos.lat, pos.lon) : Infinity;
   const dTo = B && pos ? haversine(B.lat, B.lon, pos.lat, pos.lon) : Infinity;
   let focus = "trajet", focusPts = null;
-  if (status === "atterri" && toU) { focus = "arrivee"; focusPts = [toU]; }
+  if ((status === "atterri" || status === "arrivee_probable") && toU) { focus = "arrivee"; focusPts = [toU]; }
   else if (status === "au_sol" && fromU) { focus = "depart"; focusPts = [fromU]; }
-  else if (posU && status === "en_vol") {
+  else if (posU && (status === "en_vol" || status === "estime")) {
     const low = altM !== null && altM < 3500;
     if (dTo < 120 || (low && dTo <= dFrom)) { focus = "arrivee"; focusPts = toU ? [posU, toU] : [posU]; }
     else if (dFrom < 100 || (low && dFrom < dTo)) { focus = "depart"; focusPts = fromU ? [posU, fromU] : [posU]; }
   }
   t.map_focus = focus;
   t.map_focus_js = js(focusPts);
-  t.map_focus_txt = focus === "arrivee" ? (status === "atterri" ? "À l'arrivée" : "En approche") : focus === "depart" ? (status === "au_sol" ? "Au départ" : "Après le décollage") : "";
+  t.map_focus_txt = focus === "arrivee" ? (status === "atterri" || status === "arrivee_probable" ? "À l'arrivée" : estimated ? "En approche (estimée)" : "En approche") : focus === "depart" ? (status === "au_sol" ? "Au départ" : "Après le décollage") : "";
 
   // Fiche détaillée
   // Heure de décollage estimée : à la première détection en vol, on retranche
@@ -372,7 +443,8 @@ async function trackScreen() {
   const raw = f?._ac || null, own = f?._owner || track.last?.owner || null;
   const dTotal = A && B ? haversine(A.lat, A.lon, B.lat, B.lon) : null;
   const elapsed = track.airborne_since ? (NOW - new Date(track.airborne_since)) / 60e3 : null;
-  const remainMin = status === "en_vol" && remaining !== null && f.speed_kmh > 150 ? remaining / f.speed_kmh * 60 + 8 : null;
+  const spNow = status === "en_vol" ? f.speed_kmh : status === "estime" ? (track.speed_kmh || 820) : null;
+  const remainMin = spNow > 150 && remaining !== null ? remaining / spNow * 60 + 8 : null;
   let wind = "", windEffect = "";
   if (raw && Number.isFinite(raw.wd) && Number.isFinite(raw.ws) && Number.isFinite(raw.track)) {
     const wsK = Math.round(raw.ws * KT_TO_KMH);
@@ -387,7 +459,7 @@ async function trackScreen() {
     from_name: route?.from_name || "", from_country: countryFr(route?.from_cc), from_icao: route?.from_icao || "",
     to_name: route?.to_name || "", to_country: countryFr(route?.to_cc), to_icao: route?.to_icao || "",
     dist_total_txt: dTotal ? thousands(dTotal) : "",
-    elapsed_txt: status === "en_vol" || status === "signal_perdu" ? dur(Math.max(elapsed, 1)) : "",
+    elapsed_txt: status === "en_vol" || status === "signal_perdu" || status === "estime" ? dur(Math.max(elapsed, 1)) : "",
     takeoff_txt: track.airborne_since ? hm(new Date(track.airborne_since)) : "",
     remaining_time_txt: remainMin ? dur(remainMin) : "",
     model: own?.maker && own?.model ? `${own.maker} ${own.model}` : (t.type || ""),
@@ -408,7 +480,7 @@ async function trackScreen() {
   if (f) { delete f._ac; delete f._owner; }
 
   track.summary = { flight: t.flight, from: t.from, to: t.to, from_city: t.from_city, to_city: t.to_city, status_txt: t.status_txt };
-  if (f) track.last = { lat: f.lat, lon: f.lon, seen: NOW.toISOString(), type: f.type, reg: f.reg, owner: own };
+  if (f) track.last = { lat: hasFix ? f.lat : track.last?.lat ?? null, lon: hasFix ? f.lon : track.last?.lon ?? null, seen: NOW.toISOString(), type: f.type, reg: f.reg, owner: own };
   return t;
 }
 
@@ -441,12 +513,18 @@ if (ACTION === "suivre") {
   history = history.filter(h => normQ(h.query) !== normQ(q));
   if (track && normQ(track.query) === normQ(q)) { if (until) track.until = until; }
   else if (saved) { track = saved; if (until) track.until = until; }
-  else track = { query: q, until: until || null, started_at: NOW.toISOString(), seen_airborne: false, landed_at: null, last: null, trail: [] };
+  else { track = { query: q, until: until || null, started_at: NOW.toISOString(), seen_airborne: false, landed_at: null, last: null, trail: [] }; prefs.zoom_suivi = 0; }
   console.log(`Suivi ${saved ? "repris" : "démarré"} : ${q}${track.until ? ` jusqu'au ${track.until}` : ""}`);
 } else if (ACTION === "arreter") {
   shelve(track);
   track = null;
   console.log("Suivi arrêté (gardé dans l'historique s'il n'est pas terminé).");
+} else if (ACTION === "zoom") {
+  const z = String(process.env.ZOOM || "auto").trim().toLowerCase();
+  const key = track ? "zoom_suivi" : "zoom_zone";
+  if (z === "auto" || z === "0") prefs[key] = 0;
+  else if (/^[+-]\d+$/.test(z)) prefs[key] = Math.max(-5, Math.min(6, (prefs[key] || 0) + parseInt(z, 10)));
+  console.log(`Zoom ${track ? "du suivi" : "au-dessus de chez moi"} : ${prefs[key] === 0 ? "automatique" : (prefs[key] > 0 ? "+" : "") + prefs[key]}`);
 } else if (ACTION === "oublier") {
   const q = (process.env.TRACK_QUERY || "").trim();
   history = history.filter(h => normQ(h.query) !== normQ(q));
@@ -467,7 +545,8 @@ const out = {
   place: CONFIG.lieu, place_short: CONFIG.lieu_court || CONFIG.lieu,
   radius_km: CONFIG.rayon_km,
   home_lat: CONFIG.latitude, home_lon: CONFIG.longitude,
-  mode: track ? "suivi" : "zone"
+  mode: track ? "suivi" : "zone",
+  map_zoom: track ? (prefs.zoom_suivi || 0) : (prefs.zoom_zone || 0)
 };
 
 if (track) {
@@ -510,6 +589,7 @@ writeJson("flights.json", out);
 writeJson("cache.json", cache);
 if (track) writeJson("track.json", track); else writeJson("track.json", null);
 writeJson("history.json", history);
+writeJson("prefs.json", prefs);
 console.log(out.mode === "suivi"
   ? `Suivi ${out.track.flight} : ${out.track.status_txt} (${out.track.progress_txt})`
   : `${out.count} vol(s) affiché(s) sur ${out.total} dans ${CONFIG.rayon_km} km`);

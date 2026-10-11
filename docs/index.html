@@ -40,6 +40,16 @@
   .screen .top { display: flex; justify-content: space-between; font-size: 15px; padding-bottom: 10px; border-bottom: 2px dotted #fff; }
   .screen .big { font-size: 34px; margin-top: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .screen .sub { font-size: 15px; margin-top: 8px; min-height: 1em; }
+
+  /* Zoom de la carte : trois touches collées sous l'écran */
+  .zoom { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 12px; margin: -12px 0 26px; }
+  .zoom .zl { font-family: "Oswald", sans-serif; font-size: 17px; line-height: 1.15; }
+  .zoom .zl small { display: block; font: 400 14px/1.3 "Atkinson Hyperlegible", sans-serif; color: var(--muted); }
+  .zoom .keys { display: grid; grid-template-columns: 1fr 1.4fr 1fr; border: 2px solid #000; border-radius: 10px; overflow: hidden; }
+  .zoom .keys button { border: 0; border-radius: 0; padding: 12px 0; font-size: 24px; background: #fff; }
+  .zoom .keys button + button { border-left: 2px solid #000; }
+  .zoom .keys .lvl { font-size: 17px; }
+  .zoom .keys .lvl.on { background: var(--sign); }
   .screen.loading .big { opacity: .4; }
 
   /* Le champ vol, façon rangée de palettes */
@@ -114,6 +124,15 @@
     <div class="sub" id="s-sub"></div>
   </div>
 
+  <div class="zoom" role="group" aria-labelledby="zoom-label">
+    <div class="zl" id="zoom-label">Zoom de la carte<small id="zoom-mode">au-dessus de chez moi</small></div>
+    <div class="keys">
+      <button type="button" id="zoom-out" aria-label="Éloigner la carte">−</button>
+      <button type="button" id="zoom-auto" class="lvl" aria-label="Revenir au cadrage automatique">Auto</button>
+      <button type="button" id="zoom-in" aria-label="Rapprocher la carte">+</button>
+    </div>
+  </div>
+
   <form id="follow" autocomplete="off">
     <label class="field" for="flight">Vol à suivre</label>
     <input class="flight" id="flight" name="flight" inputmode="text" autocapitalize="characters" spellcheck="false"
@@ -173,7 +192,7 @@
   function headers() { return { "Authorization": "Bearer " + getToken(), "Accept": "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28" }; }
   function say(msg, kind) { var s = $("status"); s.textContent = msg; s.className = "status" + (kind ? " " + kind : ""); }
   function busy(on) {
-    ["btn-follow", "btn-home", "btn-refresh"].forEach(function (id) { $(id).disabled = on; });
+    ["btn-follow", "btn-home", "btn-refresh", "zoom-out", "zoom-auto", "zoom-in"].forEach(function (id) { $(id).disabled = on; });
     Array.prototype.forEach.call(document.querySelectorAll(".saved button"), function (b) { b.disabled = on; });
   }
 
@@ -208,6 +227,10 @@
       $("s-sub").textContent = n ? n + " avion" + (n > 1 ? "s" : "") + " à " + d.radius_km + " km" : "Aucun avion à " + d.radius_km + " km";
       $("btn-home").hidden = true;
     }
+    var z = Number(d.map_zoom) || 0;
+    $("zoom-auto").textContent = z === 0 ? "Auto" : (z > 0 ? "+" : "−") + Math.abs(z);
+    $("zoom-auto").className = "lvl" + (z === 0 ? " on" : "");
+    $("zoom-mode").textContent = d.mode === "suivi" ? "pendant le suivi" : "au-dessus de chez moi";
     renderSaved(d.history || []);
     return d;
   }
@@ -314,9 +337,17 @@
     run("Retour au ciel de Cagnac", "arreter-le-suivi.yml", {}, function (d) { return d.mode === "zone"; });
   });
   $("btn-refresh").addEventListener("click", function () { run("Actualisation", "actualiser.yml", {}); });
+  function zoom(step, label) {
+    var before = null;
+    readData().then(function (d) { before = Number(d.map_zoom) || 0; }).catch(function () {});
+    run(label, "zoom-carte.yml", { zoom: step }, function (d) { return before === null || (Number(d.map_zoom) || 0) !== before || step === "auto"; });
+  }
+  $("zoom-in").addEventListener("click", function () { zoom("+1", "Carte rapprochée"); });
+  $("zoom-out").addEventListener("click", function () { zoom("-1", "Carte éloignée"); });
+  $("zoom-auto").addEventListener("click", function () { zoom("auto", "Retour au cadrage automatique"); });
 
   // ---- Dernières demandes ----
-  var NAMES = { "Suivre un vol": "Suivre un vol", "Arrêter le suivi": "Retour au ciel", "Actualiser le radar": "Actualisation", "Oublier un vol": "Retrait d'un vol" };
+  var NAMES = { "Suivre un vol": "Suivre un vol", "Arrêter le suivi": "Retour au ciel", "Actualiser le radar": "Actualisation", "Oublier un vol": "Retrait d'un vol", "Zoom de la carte": "Zoom de la carte" };
   function loadRuns() {
     if (!getToken()) return;
     fetch(API + "/actions/runs?per_page=6&event=workflow_dispatch", { headers: headers() })

@@ -91,12 +91,13 @@
           <div class="content">
             <span class="value value--small">{{ t.flight }}</span>
             <span class="label">{% if t.has_route %}{{ t.from }} – {{ t.to }} · {% endif %}{% if t.map_focus_txt and t.map_focus_txt != "" %}{{ t.map_focus_txt }}{% else %}{{ t.status_txt }}{% endif %}{% if t.progress_pct != nil %} · {{ t.progress_pct }} %{% endif %}</span>
+            {%- if t.pos_estimated and t.fix_txt != "" -%}<span class="label label--small">Dernier signal à {{ t.fix_txt }}</span>{%- endif -%}
           </div>
         </div>
         {%- if t.over_txt and t.over_txt != "" -%}
         <div class="divider"></div>
         <div class="flex flex--col">
-          <span class="label label--small">Survole</span>
+          <span class="label label--small">{% if t.pos_estimated %}Survole (estimé){% else %}Survole{% endif %}</span>
           <span class="title title--small" data-clamp="2">{{ t.over_txt }}</span>
         </div>
         {%- endif -%}
@@ -129,6 +130,20 @@
   var pos = {{ t.map_pos_js | default: "null" }}, from = {{ t.map_from_js | default: "null" }}, to = {{ t.map_to_js | default: "null" }};
   var heading = {{ t.map_heading | default: 0 }};
   var focus = {{ t.map_focus_js | default: "null" }};
+  var est = {{ t.map_est_js | default: "[]" }}, estimated = {% if t.map_estimated %}true{% else %}false{% endif %};
+  // Cadrage : automatique, ou décalé de « zoom » crans depuis la télécommande.
+  // En zoomant, la carte se centre sur l'avion (suivi) ou sur la maison (au-dessus de chez moi).
+  var zoomOffset = {{ map_zoom | default: 0 }};
+  function frame(map, pts, pad, maxZoom, centerPt) {
+    if (!pts.length) { map.jumpTo({ center: centerPt, zoom: 4 + zoomOffset }); return; }
+    if (!zoomOffset) { TRMNLMaps.fit(map, pts, { padding: pad, maxZoom: maxZoom }); return; }
+    var b = new maplibregl.LngLatBounds(pts[0], pts[0]);
+    pts.forEach(function (p) { b.extend(p); });
+    var cam = map.cameraForBounds(b, { padding: pad, maxZoom: maxZoom });
+    var z = Math.max(1, Math.min(16, Math.floor(cam && isFinite(cam.zoom) ? cam.zoom : 4) + zoomOffset));
+    var c = zoomOffset > 0 && centerPt ? centerPt : (cam ? cam.center : centerPt);
+    map.jumpTo({ center: c, zoom: z, padding: pad });
+  }
   function whenReady(cb) {
     var tries = 0;
     (function attempt() {
@@ -146,8 +161,16 @@
     var ctx = c.getContext("2d");
     ctx.scale(px / 24, px / 24);
     var path = new Path2D(PLANE);
-    ctx.lineJoin = "round"; ctx.lineWidth = 2.2; ctx.strokeStyle = "#fff"; ctx.stroke(path);
-    ctx.fillStyle = "#000"; ctx.fill(path);
+    ctx.lineJoin = "round";
+    if (estimated) {
+      // Position estimée : avion « en creux » (blanc cerné de noir)
+      ctx.lineWidth = 3.4; ctx.strokeStyle = "#fff"; ctx.stroke(path);
+      ctx.fillStyle = "#fff"; ctx.fill(path);
+      ctx.lineWidth = 1.4; ctx.strokeStyle = "#000"; ctx.stroke(path);
+    } else {
+      ctx.lineWidth = 2.2; ctx.strokeStyle = "#fff"; ctx.stroke(path);
+      ctx.fillStyle = "#000"; ctx.fill(path);
+    }
     if (!map.hasImage("rc-plane")) map.addImage("rc-plane", ctx.getImageData(0, 0, px, px));
     map.addSource("rc-plane", { type: "geojson", data: { type: "Feature", properties: {}, geometry: { type: "Point", coordinates: pos } } });
     map.addLayer({ id: "rc-plane", type: "symbol", source: "rc-plane", layout: {
@@ -160,11 +183,17 @@
       map.on("load", function () {
         if (todo.length > 1) TRMNLMaps.route(map, todo, { el: el, id: "todo", i: done.length > 1 ? 1 : 0, n: 2 });
         if (done.length > 1) TRMNLMaps.route(map, done, { el: el, id: "done", i: 0, n: 2 });
+        if (est.length > 1) {
+          // Portion estimée (sans signal) : pointillés
+          map.addSource("rc-est", { type: "geojson", data: { type: "Feature", properties: {}, geometry: { type: "LineString", coordinates: est } } });
+          map.addLayer({ id: "rc-est", type: "line", source: "rc-est", layout: { "line-cap": "butt" },
+            paint: { "line-color": "#000", "line-width": TRMNLPaint.px(3, { el: el }), "line-dasharray": [1.6, 1.4] } });
+        }
         if (from) TRMNLMaps.dot(map, from, { el: el, id: "from" });
         if (to) TRMNLMaps.dot(map, to, { el: el, id: "to", hollow: true });
         if (pos) addPlane(map, TRMNLPaint.px({% if short or narrow %}26{% else %}36{% endif %}, { el: el }));
       });
-      var pts = focus && focus.length ? focus.slice() : done.concat(todo);
+      var pts = focus && focus.length ? focus.slice() : done.concat(est, todo);
       var maxZoom = focus && focus.length ? (focus.length === 1 ? 12 : 11) : 9;
       var home = [{{ home_lon | default: 2.17 }}, {{ home_lat | default: 43.988 }}];
       if (!(focus && focus.length)) {
@@ -175,8 +204,7 @@
       var gutter = TRMNLPaint.px(28, { el: el });
       var card = document.getElementById(cardId);
       var left = card ? card.offsetLeft + card.offsetWidth + gutter : gutter;
-      if (pts.length) TRMNLMaps.fit(map, pts, { padding: { top: gutter, right: gutter, bottom: gutter, left: left }, maxZoom: maxZoom });
-      else { map.setCenter(home); map.setZoom(4); }
+      frame(map, pts, { top: gutter, right: gutter, bottom: gutter, left: left }, maxZoom, pos || to || from || home);
       return map;
     });
   });
@@ -224,6 +252,16 @@
   var el = "rc-zmap-{{ sz }}", cardId = "rc-zcard-{{ sz }}";
   var planes = ({{ map_flights_js | default: "[]" }}).filter(function (p) { return p[3] <= {{ n }}; }), circle = {{ map_circle_js | default: "[]" }};
   var home = [{{ home_lon | default: 2.17 }}, {{ home_lat | default: 43.988 }}];
+  // Cadrage : automatique, ou décalé de « zoom » crans depuis la télécommande.
+  var zoomOffset = {{ map_zoom | default: 0 }};
+  function frame(map, pts, pad, maxZoom, centerPt) {
+    if (!zoomOffset) { TRMNLMaps.fit(map, pts, { padding: pad, maxZoom: maxZoom }); return; }
+    var b = new maplibregl.LngLatBounds(pts[0], pts[0]);
+    pts.forEach(function (p) { b.extend(p); });
+    var cam = map.cameraForBounds(b, { padding: pad, maxZoom: maxZoom });
+    var z = Math.max(1, Math.min(16, Math.floor(cam && isFinite(cam.zoom) ? cam.zoom : 9) + zoomOffset));
+    map.jumpTo({ center: centerPt, zoom: z, padding: pad });
+  }
   var PLANE = "M12 1.5c.9 0 1.5.8 1.5 1.7V9l8 4.6v2.3l-8-2.4v4.8l2.4 1.8V22L12 21l-3.9 1v-1.9l2.4-1.8v-4.8l-8 2.4v-2.3l8-4.6V3.2c0-.9.6-1.7 1.5-1.7z";
   function whenReady(cb) {
     var tries = 0;
@@ -279,7 +317,7 @@
       {% if narrow %}if (card) pad.bottom = card.offsetHeight + gutter * 1.5;{% else %}if (card) pad.left = card.offsetLeft + card.offsetWidth + gutter;{% endif %}
       var pts = circle.length ? circle.slice() : [home];
       planes.forEach(function (p) { pts.push([p[0], p[1]]); });
-      TRMNLMaps.fit(map, pts, { padding: pad, maxZoom: 11 });
+      frame(map, pts, pad, 11, home);
       return map;
     });
   });
@@ -391,7 +429,7 @@
   {%- else -%}
   <span class="label text--center">{% if t.status == "attente" %}Le vol apparaîtra dès que son transpondeur émettra{% else %}Route inconnue{% endif %}</span>
   {%- endif -%}
-  {%- if t.over_txt and t.over_txt != "" -%}<span class="label text--center" data-clamp="1">Survole : {{ t.over_txt }}</span>{%- endif -%}
+  {%- if t.over_txt and t.over_txt != "" -%}<span class="label text--center" data-clamp="1">{% if t.pos_estimated %}Survole (estimé){% else %}Survole{% endif %} : {{ t.over_txt }}</span>{%- endif -%}
   {%- if t.route_doubt -%}<span class="label label--small text--center">Route incertaine : l'avion s'écarte du trajet prévu</span>{%- endif -%}
   {%- unless short or t.status == "attente" -%}
   <div class="divider"></div>

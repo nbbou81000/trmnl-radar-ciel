@@ -82,6 +82,7 @@ Plutôt que de passer par l'onglet Actions, utilise la page **https://nbbou81000
 
 - Elle montre ce qu'affiche le radar en ce moment.
 - Tape un vol : elle vérifie la route (« Air France AF6125 : Toulouse → Paris ») avant que tu valides avec **Suivre ce vol**.
+- **Zoom de la carte (− / Auto / +)** : rapproche ou éloigne la carte affichée (au-dessus de chez moi ou suivi). En rapprochant, la carte se centre sur la maison ou sur l'avion. Le réglage du suivi revient à « Auto » à chaque nouveau vol.
 - **Revenir au ciel de Cagnac** arrête le suivi. Si le vol n'a pas encore atterri, il passe dans **Suivis mis de côté**, d'où tu peux le **Reprendre** (avec sa trace) ou le **Retirer**. Ces vols disparaissent seuls après leur date de fin ou au bout de 48 h.
 - **Actualiser maintenant** relance une mise à jour.
 
@@ -128,6 +129,15 @@ Modifie `config.json` directement sur GitHub (icône crayon), puis **Commit chan
 - villes : GeoNames (CC BY 4.0). Le monde est couvert à partir de 5 000 habitants, la France à partir de 1 000.
 
 Pour rafraîchir ces données (rarement utile) : **Actions → Préparer les données géographiques → Run workflow**.
+
+## Vols long-courriers et zones sans récepteur
+
+adsb.lol ne reçoit que des stations au sol : au-dessus des océans (et de certaines régions désertiques), l'avion disparaît pendant des heures. Dans ce cas, la position est **estimée** sur la route prévue, à partir du dernier signal, de la dernière vitesse et du temps écoulé :
+- statut « Position estimée », avec l'heure du dernier signal ;
+- sur la carte, la portion estimée est en pointillés et l'avion est dessiné en creux ;
+- altitude et vitesse affichées sont les dernières connues (« ≈ ») ;
+- dès que l'avion est de nouveau capté, la position réelle reprend le dessus ;
+- s'il n'est jamais recapté, le vol passe en « Arrivée probable » une vingtaine de minutes après l'heure d'arrivée estimée.
 
 ## Limites
 

@@ -1,0 +1,27 @@
+name: Zoom de la carte
+
+# Rapproche ou éloigne la carte du mode en cours (au-dessus de chez moi ou suivi d'un vol).
+# Utilisé par la télécommande ; « auto » revient au cadrage automatique.
+on:
+  workflow_dispatch:
+    inputs:
+      zoom:
+        description: "Zoom"
+        required: true
+        type: choice
+        options: ["+1", "-1", "auto"]
+        default: "+1"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: radar
+  cancel-in-progress: false
+
+jobs:
+  radar:
+    uses: ./.github/workflows/_radar.yml
+    with:
+      action: zoom
+      zoom: ${{ inputs.zoom }}
