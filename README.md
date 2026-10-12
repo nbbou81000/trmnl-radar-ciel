@@ -12,6 +12,8 @@ Affiche sur un TRMNL les avions qui survolent Cagnac-les-Mines (rayon de 30 km),
 - **Suivis mis de côté** : un suivi interrompu avant l'atterrissage reste dans la télécommande pour être repris plus tard, avec sa trace.
 - **Où regarder** (écran au-dessus de chez moi) : carte du ciel vue du sol — chaque avion placé selon sa direction et sa hauteur au-dessus de l'horizon —, tendance (se rapproche, s'éloigne), prochain passage au plus près et prochain passage visible de l'ISS.
 - **Carnet du ciel** (écran au-dessus de chez moi) : survols du jour, collection de types d'avions, compagnies et pays de départ, prise du jour, plus longue route, nouveautés et survols par heure.
+- **Collection d'avions** (écran à part) : une carte par modèle vu, façon album de collection — photo tramée pour l'e-ink, constructeur, date de la première rencontre, nombre de passages, badges « NOUVEAU » et « RARE ». Les cartes tournent toutes les 15 minutes quand il y en a plus que l'écran n'en contient.
+- **Statistiques** (écran à part) : survols cumulés, moyenne et record par jour, avions différents et « habitués » qui repassent, jours d'affilée ; records (plus haut, plus rapide, plus proche, plus long trajet) ; carte de chaleur jour × heure ; compagnies les plus vues (avec logos) ; rose des caps ; modèles et destinations les plus fréquents ; familles d'appareils ; altitudes de passage ; jours de la semaine. Deux pages qui alternent toutes les 15 minutes.
 - **Alertes « rare »** : bandeau sur les écrans au-dessus de chez moi quand passe un avion militaire ou d'État, un appareil hors du commun (A380, Beluga, A400M…), un hélicoptère du SAMU ou un code d'urgence.
 - **Logos des compagnies**, convertis en noir pur pour l'e-ink (tableau classique, cartes, Où regarder, fiches).
 - **Vol et arrivée** (écran de suivi) : profil d'altitude du vol, heure locale et météo réelle (METAR) à l'aéroport d'arrivée.
@@ -31,6 +33,12 @@ Affiche sur un TRMNL les avions qui survolent Cagnac-les-Mines (rayon de 30 km),
 | ![](docs/apercus/suivi-fiche.png) | ![](docs/apercus/carte-minimal.png) |
 | **En approche (style Rues)** | **Carte au-dessus de chez moi** |
 | ![](docs/apercus/carte-approche.png) | ![](docs/apercus/zone-carte.png) |
+| **Collection d'avions** | **Statistiques (page 1)** |
+| ![](docs/apercus/collection.png) | ![](docs/apercus/stats-1.png) |
+| **Collection (demi-écran)** | **Statistiques (page 2)** |
+| ![](docs/apercus/collection-demi.png) | ![](docs/apercus/stats-2.png) |
+
+Les photos de la collection viennent des articles Wikipédia de chaque modèle (Wikimedia Commons, licences libres) : ce sont des photos du modèle, pas de l'avion précis qui est passé.
 
 ## Comment ça marche
 
@@ -72,7 +80,7 @@ La branche `data` est réécrite à chaque passage (un seul commit), donc l'hist
 2. Strategy : **Polling**. Polling URL :
    `https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/flights.json`
 3. Refresh rate : le plus court proposé (5 minutes). Règle aussi l'intervalle de rafraîchissement de l'appareil sur 5 minutes.
-4. **Form fields** : colle le contenu de `trmnl/custom-fields.yml`. Quatre réglages apparaissent alors dans le plugin : le style d'affichage, l'écran au-dessus de chez moi (tableau ou carte), l'écran pendant un suivi (tableau, carte ou fiche détaillée) et le style de la carte.
+4. **Form fields** : colle le contenu de `trmnl/custom-fields.yml`. Cinq réglages apparaissent alors dans le plugin : l'écran (Radar, Collection d'avions ou Statistiques), le style d'affichage, l'écran au-dessus de chez moi, l'écran pendant un suivi et le style de la carte.
 5. **Edit Markup** : colle chaque fichier dans l'onglet correspondant.
    - `trmnl/shared.liquid` → Shared
    - `trmnl/full.liquid` → Full
@@ -80,6 +88,11 @@ La branche `data` est réécrite à chaque passage (un seul commit), donc l'hist
    - `trmnl/half_vertical.liquid` → Half vertical
    - `trmnl/quadrant.liquid` → Quadrant
 6. Enregistre, puis ajoute le plugin à la playlist de ton TRMNL.
+
+### 5. Écrans supplémentaires : collection et statistiques
+Le réglage **Écran** choisit ce qu'affiche le plugin. Pour avoir à la fois le radar, la collection et les statistiques dans ta playlist, crée un plugin privé par écran : même Polling URL, mêmes Form fields, même Markup, et dans chacun un réglage **Écran** différent. Ils lisent tous le même fichier, sans rien changer côté GitHub.
+
+La collection et les statistiques s'affichent même pendant le suivi d'un vol : seul l'écran « Radar » bascule sur le vol suivi.
 
 ## Télécommande (page web)
 

@@ -4,6 +4,7 @@
   "type": "module",
   "description": "Radar du ciel — collecte pour le plugin TRMNL",
   "dependencies": {
+    "jpeg-js": "^0.4.4",
     "pngjs": "^7.0.0",
     "satellite.js": "^5.0.0",
     "tz-lookup": "^6.1.25"

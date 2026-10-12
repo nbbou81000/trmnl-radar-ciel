@@ -13,7 +13,8 @@ import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { TYPES } from "./types.mjs";
 import { overflown } from "./geo.mjs";
-import { ensureLogos, logoUrl, lookAngles, trendTxt, skyXY, nextPass, rarity, updateCarnet, summarizeCarnet, issInfo, arrivalInfo, altitudeProfile, dirName } from "./extras.mjs";
+import { ensureLogos, logoUrl, lookAngles, trendTxt, skyXY, nextPass, rarity, updateCarnet, summarizeCarnet, issInfo, arrivalInfo, altitudeProfile, dirName, dayKey, RARE_TYPES } from "./extras.mjs";
+import { ensurePhotos, buildCollection, buildStats } from "./collection.mjs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const CONFIG = JSON.parse(readFileSync(join(ROOT, "config.json"), "utf8"));
@@ -176,6 +177,7 @@ async function describe(ac) {
     from_cc: route?.from_cc || "",
     route_km: route && [route.from_lat, route.from_lon, route.to_lat, route.to_lon].every(Number.isFinite) ? Math.round(haversine(route.from_lat, route.from_lon, route.to_lat, route.to_lon)) : 0,
     rare: rarity(ac, null),
+    mil: (Number(ac.dbFlags) & 1) === 1,
     _route: route, _ac: ac, _owner: owner
   };
   return o;
@@ -213,6 +215,7 @@ async function zone() {
   for (const { a, d } of wide.slice(0, 30)) {
     const f = await describe(a);
     f.dist_km = Math.round(d);
+    f.dist_x = Math.round(d * 10) / 10;
     f.in_radius = d <= CONFIG.rayon_km;
     f.from_country = countryFr(f.from_cc);
     described.push(f);
@@ -641,13 +644,25 @@ const carnetFile = join(DATA_DIR, "carnet.json");
 let carnet = null;
 try { carnet = JSON.parse(readFileSync(carnetFile, "utf8")); } catch { carnet = null; }
 const forCarnet = described.filter(f => f.in_radius).map(f => ({
-  hex: f.hex, flight: f.flight, type: f.type, type_code: f.type_code, airline: f.airline, airline_icao: f.airline_icao,
+  hex: f.hex, flight: f.flight, type: f.type, type_code: f.type_code, airline: f.airline, airline_icao: f.airline_icao, airline_iata: f.airline_iata,
   from_cc: f.from_cc, from_country: f.from_country, from_city: f.from_city, to_city: f.to_city,
-  route_km: f.route_km, alt_m: f.alt_m, rare: f.rare
+  route_km: f.route_km, alt_m: f.alt_m, rare: f.rare,
+  reg: f.reg, to_city: f.to_city, speed_kmh: f.speed_kmh, dist_km: f.dist_x, track_deg: f.track_deg, on_ground: f.on_ground, mil: !!f.mil
 }));
 carnet ||= {};
 out.carnet = z.ok ? updateCarnet(carnet, forCarnet, NOW, TZ, Object.keys(TYPES).length) : summarizeCarnet(carnet, NOW, TZ, Object.keys(TYPES).length);
 writeFileSync(carnetFile, JSON.stringify(carnet));
+
+// Collection d'avions (photos par modèle) et statistiques avancées
+{
+  const today = dayKey(NOW, TZ);
+  const byCount = Object.entries(carnet.coll?.types || {}).sort((a, b) => (b[1].n || 1) - (a[1].n || 1)).map(([k]) => k);
+  let photoIdx = {};
+  try { photoIdx = await ensurePhotos(DATA_DIR, byCount, 4); } catch (e) { console.warn("Photos :", e.message); }
+  out.collection = buildCollection(carnet, today, photoIdx, DATA_BASE, RARE_TYPES, Object.keys(TYPES).length);
+  const airlines = carnet.coll?.airlines || {};
+  out.stats = buildStats(carnet, today, k => logoUrl(DATA_BASE, logoIdx, { iata: airlines[k]?.iata, icao: k }));
+}
 
 // ISS
 try { out.iss = await issInfo(DATA_DIR, HOME, NOW, TZ); } catch (e) { console.warn("ISS :", e.message); out.iss = null; }

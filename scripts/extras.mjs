@@ -7,6 +7,7 @@ import { join } from "node:path";
 import { PNG } from "pngjs";
 import * as satellite from "satellite.js";
 import tzlookupMod from "tz-lookup";
+import { recordSighting, backfillStats } from "./collection.mjs";
 
 const tzlookup = tzlookupMod.default || tzlookupMod;
 const R_EARTH = 6371;
@@ -175,7 +176,7 @@ export function nextPass(home, list, horizonMin = 12) {
 // ---------------------------------------------------------------------------
 // Appareils rares
 // ---------------------------------------------------------------------------
-const RARE_TYPES = {
+export const RARE_TYPES = {
   A388: "Airbus A380", A3ST: "Airbus Beluga", A337: "Airbus BelugaXL", A400: "Airbus A400M Atlas",
   A124: "Antonov An-124", A225: "Antonov An-225", C17: "Boeing C-17 Globemaster", C5M: "Lockheed C-5 Galaxy",
   K35R: "Boeing KC-135", A332: null, MRTT: "Airbus A330 MRTT", B748: "Boeing 747-8", B744: "Boeing 747-400", B742: "Boeing 747-200",
@@ -221,6 +222,7 @@ export function updateCarnet(carnet, list, now, tz, totalTypes) {
   carnet.since ||= now.toISOString();
   carnet.days ||= {};
   carnet.coll ||= { types: {}, airlines: {}, countries: {} };
+  backfillStats(carnet);
   const key = dayKey(now, tz);
   const day = carnet.days[key] ||= { count: 0, hours: Array(24).fill(0), hexes: [], best: null, longest: null, news: [] };
   const seen = new Set(day.hexes);
@@ -230,11 +232,16 @@ export function updateCarnet(carnet, list, now, tz, totalTypes) {
     day.count++; day.hours[hourIn(now, tz)]++;
     const addColl = (kind, k, name) => {
       if (!k || !name) return;
-      if (!carnet.coll[kind][k]) { carnet.coll[kind][k] = { name, first: key }; day.news.push(name); }
+      const e = carnet.coll[kind][k];
+      if (!e) { carnet.coll[kind][k] = { name, first: key, last: key, n: 1 }; day.news.push(name); }
+      else { e.n = (e.n || 1) + 1; e.last = key; }
     };
     addColl("types", a.type_code, a.type || a.type_code);
     addColl("airlines", a.airline_icao, a.airline);
+    if (a.airline_icao && a.airline_iata && carnet.coll.airlines[a.airline_icao]) carnet.coll.airlines[a.airline_icao].iata = a.airline_iata;
     addColl("countries", a.from_cc, a.from_country);
+    const dow = (new Date(key + "T12:00:00Z").getUTCDay() + 6) % 7;
+    recordSighting(carnet, a, { day: key, dow, hour: hourIn(now, tz) });
     // Prise du jour : rareté d'abord, puis gros porteurs, puis longueur de la route
     const score = a.rare ? 100 + a.rare.level : (BIG[a.type_code] || 0) + Math.min(40, (a.route_km || 0) / 200);
     if (!day.best || score > day.best.score) day.best = {

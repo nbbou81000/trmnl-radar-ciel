@@ -11,11 +11,179 @@
 {%- assign dd = t.d -%}
 {%- assign zvue_raw = trmnl.plugin_settings.custom_fields_values.zone_affichage | default: zone_affichage | default: "tableau" | downcase -%}
 {%- if zvue_raw contains "carnet" -%}{%- assign zvue = "carnet" -%}{%- elsif zvue_raw contains "ciel" or zvue_raw contains "regard" -%}{%- assign zvue = "ciel" -%}{%- elsif zvue_raw contains "carte" -%}{%- assign zvue = "carte" -%}{%- else -%}{%- assign zvue = "tableau" -%}{%- endif -%}
+{%- assign ecran_raw = trmnl.plugin_settings.custom_fields_values.ecran | default: ecran | default: "radar" | downcase -%}
+{%- if ecran_raw contains "collec" -%}{%- assign ecran = "collection" -%}{%- elsif ecran_raw contains "stat" -%}{%- assign ecran = "stats" -%}{%- else -%}{%- assign ecran = "radar" -%}{%- endif -%}
 {%- capture rare_banner -%}{%- if rare -%}<div class="rc-rare"><span class="rc-rare__tag">RARE</span><span class="rc-rare__txt">{{ rare.why }}{% if rare.airline != "" and rare.airline != nil %} · {{ rare.airline }}{% endif %} · {{ rare.where_txt }}</span></div>{%- endif -%}{%- endcapture -%}
 {%- capture plane_path -%}M0 -10 L1.6 -3.4 L10 1.6 L10 3.4 L1.6 1.4 L1.2 6.6 L3.6 8.4 L3.6 10 L0 9 L-3.6 10 L-3.6 8.4 L-1.2 6.6 L-1.6 1.4 L-10 3.4 L-10 1.6 L-1.6 -3.4 Z{%- endcapture -%}
 {%- capture title_line -%}{% if mode == "suivi" %}Suivi {{ t.flight }}{% else %}{{ place_short }} · {{ total_n }} avion{% if total_n > 1 %}s{% endif %} à {{ radius_km }} km{% endif %} · {{ updated_txt }}{% if stale %} (ancien){% endif %}{%- endcapture -%}
 
-{%- if mode == "suivi" and vue == "arrivee" -%}
+{%- if ecran == "collection" -%}
+{%- comment -%} ===================== COLLECTION D'AVIONS ===================== {%- endcomment -%}
+{%- assign co = collection -%}
+{%- if sz == "full" -%}{%- assign per = 6 -%}{%- elsif sz == "half_horizontal" -%}{%- assign per = 4 -%}{%- elsif sz == "half_vertical" -%}{%- assign per = 4 -%}{%- else -%}{%- assign per = 2 -%}{%- endif -%}
+{%- assign ncards = co.cards.size | default: 0 -%}
+{%- assign pages = ncards | plus: per | minus: 1 | divided_by: per | floor -%}
+{%- if pages < 1 -%}{%- assign pages = 1 -%}{%- endif -%}
+{%- assign tick = "now" | date: "%s" | plus: 0 | divided_by: 900 | floor -%}{%- if apercu_page -%}{%- assign tick = apercu_page -%}{%- endif -%}
+{%- assign page = tick | modulo: pages -%}
+{%- assign off = page | times: per -%}
+{%- assign page_n = page | plus: 1 -%}
+<div class="layout">
+  <div class="rc rc-coll rc-coll--{{ sz }}">
+    <div class="rc-coll__head">
+      <span class="value {% if sz == 'full' %}value--small{% else %}value--xsmall{% endif %} rc-coll__title">Collection</span>
+      <div class="rc-coll__prog">
+        <span class="label label--small">{{ co.count | default: 0 }} / {{ co.total_types }} modèles{% unless narrow %} · {{ co.sightings_txt | default: 0 }} survols{% endunless %}</span>
+        <div class="rc-bar"><div class="rc-bar__fill" style="width: {{ co.pct | default: 0 }}%"></div></div>
+      </div>
+      {%- if pages > 1 -%}<span class="label label--small label--inverted rc-coll__page">{{ page_n }}/{{ pages }}</span>{%- endif -%}
+    </div>
+    {%- if ncards == 0 -%}
+    <div class="rc-coll__empty"><span class="title">La collection est vide pour l'instant</span><span class="label">Chaque nouveau modèle qui passe au-dessus de {{ place_short }} viendra s'ajouter ici, avec sa photo.</span></div>
+    {%- else -%}
+    <div class="rc-coll__grid">
+      {%- for c in co.cards limit: per offset: off -%}
+      {%- if sz == "full" -%}{%- assign ph = c.photo_l -%}{%- else -%}{%- assign ph = c.photo_s -%}{%- endif -%}
+      <div class="rc-card">
+        <div class="rc-card__ph">
+          {%- if ph != "" -%}<img src="{{ ph }}" alt="">{%- else -%}<div class="rc-card__noph"><span>{{ c.code }}</span></div>{%- endif -%}
+          <span class="rc-card__rank">#{{ c.rank }}</span>
+          {%- if c.is_new -%}<span class="rc-card__tag">NOUVEAU</span>{%- elsif c.rare -%}<span class="rc-card__tag">RARE</span>{%- endif -%}
+        </div>
+        <div class="rc-card__info">
+          <div class="rc-card__txt">
+            <span class="rc-card__name">{{ c.name }}</span>
+            {%- if sz == "full" -%}<span class="rc-card__sub">{% if c.maker != "" %}{{ c.maker }} · {% endif %}dès le {{ c.first_txt }}</span>{%- else -%}<span class="rc-card__sub">{% if c.maker != "" %}{{ c.maker }}{% else %}dès le {{ c.first_txt }}{% endif %}</span>{%- endif -%}
+          </div>
+          <span class="rc-card__n"><small>×</small>{{ c.n }}</span>
+        </div>
+      </div>
+      {%- endfor -%}
+    </div>
+    {%- endif -%}
+  </div>
+</div>
+<div class="title_bar">
+  <img class="image image-stroke" src="data:image/svg+xml;base64,{{ svg_logo | base64_encode }}" />
+  <span class="title">Collection d'avions</span>
+  <span class="instance">{% if co.newest and short != true and narrow != true %}Dernier arrivé : {{ co.newest.name }} ({{ co.newest.day }}) · {% endif %}Photos{% unless narrow %} Wikimedia{% endunless %} Commons</span>
+</div>
+
+{%- elsif ecran == "stats" -%}
+{%- comment -%} ===================== STATISTIQUES ===================== {%- endcomment -%}
+{%- assign sx = stats -%}
+{%- assign tick = "now" | date: "%s" | plus: 0 | divided_by: 900 | floor -%}{%- if apercu_page -%}{%- assign tick = apercu_page -%}{%- endif -%}
+{%- assign spage = tick | modulo: 2 -%}
+{%- capture pats -%}<defs>
+  <pattern id="rcd1" width="4" height="4" patternUnits="userSpaceOnUse"><rect width="1" height="1" fill="#000"/></pattern>
+  <pattern id="rcd2" width="2" height="2" patternUnits="userSpaceOnUse"><rect width="1" height="1" fill="#000"/><rect x="1" y="1" width="1" height="1" fill="#000"/></pattern>
+  <pattern id="rcd3" width="2" height="2" patternUnits="userSpaceOnUse"><rect width="2" height="2" fill="#000"/><rect width="1" height="1" fill="#fff"/></pattern>
+</defs>{%- endcapture -%}
+{%- capture kpis -%}
+  <div class="rc-kpi"><span class="label label--small">Survols</span><span class="value value--tnums">{{ sx.total_txt }}</span><span class="label label--small">depuis le {{ sx.since_txt }}</span></div>
+  <div class="rc-kpi"><span class="label label--small">Par jour</span><span class="value value--tnums">{{ sx.avg_txt }}</span><span class="label label--small">record {{ sx.best_day_n }} le {{ sx.best_day_txt }}</span></div>
+  <div class="rc-kpi"><span class="label label--small">Avions différents</span><span class="value value--tnums">{{ sx.unique_txt }}</span><span class="label label--small">dont {{ sx.regulars }} revenus</span></div>
+  <div class="rc-kpi"><span class="label label--small">Jours d'affilée</span><span class="value value--tnums">{{ sx.streak }}</span><span class="label label--small">sans jour sans avion</span></div>
+  <div class="rc-kpi"><span class="label label--small">Modèles</span><span class="value value--tnums">{{ collection.count }}</span><span class="label label--small">sur {{ collection.total_types }} connus</span></div>
+{%- endcapture -%}
+{%- capture heatmap -%}
+  <svg class="rc-heat" viewBox="0 0 320 98">{{ pats }}
+    {%- for row in sx.heat -%}{%- assign ry = forloop.index0 | times: 12 -%}
+    <text x="0" y="{{ ry | plus: 9 }}" font-size="10" font-family="Inter, sans-serif">{{ row.d }}</text>
+    {%- for c in row.cells -%}{%- assign cx = c.h | times: 12 | plus: 32 -%}
+    {%- if c.l == 0 -%}<rect x="{{ cx | plus: 4 }}" y="{{ ry | plus: 4 }}" width="2" height="2" fill="#000"/>{%- elsif c.l == 4 -%}<rect x="{{ cx }}" y="{{ ry }}" width="11" height="11" fill="#000"/>{%- else -%}<rect x="{{ cx }}" y="{{ ry }}" width="11" height="11" fill="url(#rcd{{ c.l }})" stroke="#000" stroke-width="1"/>{%- endif -%}
+    {%- endfor -%}{%- endfor -%}
+    <g font-size="10" font-family="Inter, sans-serif"><text x="32" y="96">0 h</text><text x="104" y="96">6 h</text><text x="176" y="96">12 h</text><text x="248" y="96">18 h</text></g>
+  </svg>
+{%- endcapture -%}
+{%- capture rose -%}
+  <svg class="rc-rose" viewBox="0 0 140 140">{{ pats }}
+    <circle cx="70" cy="70" r="60" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="2 3"/>
+    <circle cx="70" cy="70" r="30" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="2 3"/>
+    {%- for p in sx.rose -%}<path d="{{ p.path }}" fill="#000"/>{%- endfor -%}
+    <circle cx="70" cy="70" r="4" fill="#fff" stroke="#000" stroke-width="1.5"/>
+    <g font-size="12" font-weight="700" font-family="Inter, sans-serif" text-anchor="middle"><text x="70" y="9">N</text><text x="134" y="74">E</text><text x="70" y="139">S</text><text x="6" y="74">O</text></g>
+  </svg>
+{%- endcapture -%}
+{%- if sz == "full" -%}{%- assign rlim = 4 -%}{%- else -%}{%- assign rlim = 3 -%}{%- endif -%}
+{%- capture records -%}
+  {%- if sx.records.size == 0 -%}<span class="label label--small">Les records arriveront avec les prochains avions.</span>{%- endif -%}
+  {%- for r in sx.records limit: rlim -%}
+  <div class="rc-rec"><span class="label label--small">{{ r.k }} · {{ r.day }}</span><span class="rc-rec__v">{{ r.v }}</span><span class="label label--small" data-clamp="1">{{ r.sub }}</span></div>
+  {%- endfor -%}
+{%- endcapture -%}
+{%- capture airlines -%}
+  {%- for a in sx.top_airlines -%}
+  <div class="rc-hbar"><span class="rc-hbar__name">{% if a.logo != "" %}<img class="rc-logo rc-logo--small" src="{{ a.logo }}">{% else %}{{ a.name }}{% endif %}</span><span class="rc-hbar__track"><span style="width: {{ a.pct }}%"></span></span><span class="rc-hbar__n">{{ a.n }}</span></div>
+  {%- endfor -%}
+{%- endcapture -%}
+{%- capture families -%}
+  {%- for f in sx.fam -%}
+  <div class="rc-hbar rc-hbar--txt"><span class="rc-hbar__name">{{ f.label }}</span><span class="rc-hbar__track"><span style="width: {{ f.pct }}%"></span></span><span class="rc-hbar__n">{{ f.share }} %</span></div>
+  {%- endfor -%}
+{%- endcapture -%}
+<div class="layout">
+  <div class="rc rc-stats rc-stats--{{ sz }}">
+  {%- if sx == nil -%}
+    <div class="rc-coll__empty"><span class="title">Pas encore de statistiques</span><span class="label">Elles se construisent au fil des avions qui passent au-dessus de {{ place_short }}.</span></div>
+  {%- elsif sz == "full" and spage == 0 -%}
+    <div class="rc-kpis">{{ kpis }}</div>
+    <div class="rc-stats__body rc-stats__body--a">
+      <div class="rc-stats__col"><span class="rc-h">Records</span>{{ records }}</div>
+      <div class="rc-stats__col">
+        <span class="rc-h">Quand passent-ils ?</span>{{ heatmap }}
+        <span class="label label--small">Le plus chargé : {{ sx.busiest_txt }}</span>
+        <span class="rc-h rc-gap">Compagnies les plus vues</span>{{ airlines }}
+      </div>
+      <div class="rc-stats__col">
+        <span class="rc-h">Vers où vont-ils ?</span>
+        <div class="rc-rosebox">{{ rose }}<span class="label label--small">{{ sx.rose_top }}</span></div>
+      </div>
+    </div>
+  {%- elsif sz == "full" -%}
+    <div class="rc-kpis">{{ kpis }}</div>
+    <div class="rc-stats__body rc-stats__body--b">
+      <div class="rc-stats__col">
+        <span class="rc-h">Modèles les plus vus</span>
+        {%- for ty in sx.top_types -%}<div class="rc-hbar rc-hbar--txt"><span class="rc-hbar__name">{{ ty.name }}</span><span class="rc-hbar__track"><span style="width: {{ ty.pct }}%"></span></span><span class="rc-hbar__n">{{ ty.n }}</span></div>{%- endfor -%}
+        <span class="rc-h rc-gap">Destinations</span>
+        {%- for d in sx.top_dest -%}<div class="rc-hbar rc-hbar--txt"><span class="rc-hbar__name">{{ d.name }}</span><span class="rc-hbar__track"><span style="width: {{ d.pct }}%"></span></span><span class="rc-hbar__n">{{ d.n }}</span></div>{%- endfor -%}
+      </div>
+      <div class="rc-stats__col">
+        <span class="rc-h">Familles d'appareils</span>{{ families }}
+        {%- if sx.regular -%}
+        <span class="rc-h rc-gap">L'habitué</span>
+        <div class="rc-rec"><span class="rc-rec__v">{{ sx.regular.id }} · {{ sx.regular.n }} passages</span><span class="label label--small" data-clamp="1">{{ sx.regular.sub }}</span></div>
+        {%- endif -%}
+      </div>
+      <div class="rc-stats__col">
+        <span class="rc-h">Altitude de passage (km)</span>
+        <div class="rc-vbars">{%- for a in sx.alt -%}<div class="rc-vbar"><span class="rc-vbar__n">{{ a.share }} %</span><span class="rc-vbar__col"><span style="height: {{ a.pct }}%"></span></span><span class="rc-vbar__l">{{ a.label }}</span></div>{%- endfor -%}</div>
+        <span class="rc-h rc-gap">Jours de la semaine</span>
+        <div class="rc-vbars rc-vbars--dow">{%- for d in sx.dow -%}<div class="rc-vbar"><span class="rc-vbar__col"><span style="height: {{ d.pct }}%"></span></span><span class="rc-vbar__l">{{ d.d }}</span></div>{%- endfor -%}</div>
+      </div>
+    </div>
+  {%- elsif sz == "half_horizontal" -%}
+    <div class="rc-stats__body rc-stats__body--hh">
+      <div class="rc-kpis rc-kpis--col">{{ kpis }}</div>
+      <div class="rc-stats__col"><span class="rc-h">Quand passent-ils ?</span>{{ heatmap }}</div>
+      <div class="rc-stats__col rc-rosebox">{{ rose }}</div>
+    </div>
+  {%- elsif sz == "half_vertical" -%}
+    <div class="rc-kpis">{{ kpis }}</div>
+    <div class="rc-stats__col"><span class="rc-h">Records</span>{{ records }}</div>
+  {%- else -%}
+    <div class="rc-kpis">{{ kpis }}</div>
+  {%- endif -%}
+  </div>
+</div>
+<div class="title_bar">
+  <img class="image image-stroke" src="data:image/svg+xml;base64,{{ svg_logo | base64_encode }}" />
+  <span class="title">Statistiques du ciel</span>
+  <span class="instance">{{ place_short }}{% unless narrow %} · {{ radius_km }} km{% endunless %}{% unless short or narrow %} · {{ sx.collection_txt }}{% endunless %}</span>
+</div>
+
+{%- elsif mode == "suivi" and vue == "arrivee" -%}
 {%- comment -%} ===================== VOL ET ARRIVÉE ===================== {%- endcomment -%}
 {%- assign ar = t.arr -%}{%- assign pf = t.profile -%}
 <div class="layout">

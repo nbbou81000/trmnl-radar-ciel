@@ -1,3 +1,13 @@
+- keyname: ecran
+  field_type: select
+  name: Écran
+  description: Radar (avions au-dessus de chez moi, ou le vol suivi), Collection d'avions (photos des modèles vus, avec le nombre de passages) ou Statistiques (records, horaires, compagnies, caps…). Pour avoir plusieurs écrans dans la playlist, créez un plugin privé par écran (même adresse, même code), chacun avec son réglage.
+  options:
+  - "Radar: radar"
+  - "Collection d'avions: collection"
+  - "Statistiques: stats"
+  default: radar
+
 - keyname: style
   field_type: select
   name: Style d'affichage
