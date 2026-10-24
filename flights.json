@@ -1,0 +1,2350 @@
+{
+ "history": [],
+ "updated_at": "2026-10-24T21:15:36.784Z",
+ "updated_txt": "23:15",
+ "place": "Cagnac-les-Mines",
+ "place_short": "Cagnac",
+ "radius_km": 30,
+ "home_lat": 43.988,
+ "home_lon": 2.17,
+ "mode": "zone",
+ "map_zoom": 1,
+ "flights": [
+  {
+   "flight": "MU262",
+   "callsign": "CES262",
+   "reg": "B-32FQ",
+   "airline": "China Eastern Airlines",
+   "type": "A350-900",
+   "type_code": "A359",
+   "from": "MAD",
+   "to": "WNZ",
+   "from_city": "Madrid",
+   "to_city": "Wenzhou",
+   "has_route": true,
+   "on_ground": false,
+   "alt_m": 10363,
+   "alt_txt": "10 363",
+   "speed_kmh": 886,
+   "speed_txt": "886",
+   "track_deg": 55,
+   "track_txt": "055",
+   "vr_ms": 0,
+   "vr_txt": "0",
+   "vr_dir": "palier",
+   "lat": 44.09279,
+   "lon": 2.103032,
+   "pos_age_s": 0,
+   "hex": "781ff7",
+   "airline_icao": "CES",
+   "airline_iata": "MU",
+   "from_cc": "ES",
+   "route_km": 10493,
+   "rare": null,
+   "mil": false,
+   "dist_km": 13,
+   "dist_x": 12.8,
+   "in_radius": true,
+   "from_country": "Espagne",
+   "flap": "MU262  MAD WNZ 10363 886 055",
+   "flap_short": "MU262  MAD WNZ 10363",
+   "logo": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/logos/MU.png",
+   "az": 335,
+   "el": 38,
+   "dir_txt": "nord-nord-ouest",
+   "trend_txt": "passe de côté",
+   "sky_x": 159,
+   "sky_y": 111
+  }
+ ],
+ "total": 1,
+ "count": 1,
+ "nearest": {
+  "flight": "MU262",
+  "callsign": "CES262",
+  "reg": "B-32FQ",
+  "airline": "China Eastern Airlines",
+  "type": "A350-900",
+  "type_code": "A359",
+  "from": "MAD",
+  "to": "WNZ",
+  "from_city": "Madrid",
+  "to_city": "Wenzhou",
+  "has_route": true,
+  "on_ground": false,
+  "alt_m": 10363,
+  "alt_txt": "10 363",
+  "speed_kmh": 886,
+  "speed_txt": "886",
+  "track_deg": 55,
+  "track_txt": "055",
+  "vr_ms": 0,
+  "vr_txt": "0",
+  "vr_dir": "palier",
+  "lat": 44.09279,
+  "lon": 2.103032,
+  "pos_age_s": 0,
+  "hex": "781ff7",
+  "airline_icao": "CES",
+  "airline_iata": "MU",
+  "from_cc": "ES",
+  "route_km": 10493,
+  "rare": null,
+  "mil": false,
+  "dist_km": 13,
+  "dist_x": 12.8,
+  "in_radius": true,
+  "from_country": "Espagne",
+  "flap": "MU262  MAD WNZ 10363 886 055",
+  "flap_short": "MU262  MAD WNZ 10363",
+  "logo": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/logos/MU.png",
+  "az": 335,
+  "el": 38,
+  "dir_txt": "nord-nord-ouest",
+  "trend_txt": "passe de côté",
+  "sky_x": 159,
+  "sky_y": 111
+ },
+ "next_pass": null,
+ "carnet": {
+  "date_txt": "Samedi 24 octobre",
+  "week": 43,
+  "since_txt": "11 octobre",
+  "today": 234,
+  "delta_txt": "+32 % vs il y a une semaine",
+  "types": 139,
+  "types_total": 168,
+  "types_pct": 83,
+  "airlines": 162,
+  "countries": 42,
+  "best": {
+   "label": "777-300ER · Swiss International Air Lines",
+   "sub": "São Paulo → Zurich, à 10 363 m, 10:20"
+  },
+  "longest": {
+   "txt": "Buenos Aires (Ezeiza) → Frankfurt",
+   "km_txt": "11 503"
+  },
+  "news": [
+   "Pan Europeenne Air Service",
+   "Air Service Liege",
+   "United Eagle",
+   "Jordanie",
+   "Tyrol Air Ambulance"
+  ],
+  "bars": [
+   {
+    "h": 0,
+    "v": 2,
+    "pct": 10,
+    "now": false
+   },
+   {
+    "h": 1,
+    "v": 2,
+    "pct": 10,
+    "now": false
+   },
+   {
+    "h": 2,
+    "v": 2,
+    "pct": 10,
+    "now": false
+   },
+   {
+    "h": 3,
+    "v": 0,
+    "pct": 0,
+    "now": false
+   },
+   {
+    "h": 4,
+    "v": 1,
+    "pct": 5,
+    "now": false
+   },
+   {
+    "h": 5,
+    "v": 0,
+    "pct": 0,
+    "now": false
+   },
+   {
+    "h": 6,
+    "v": 5,
+    "pct": 24,
+    "now": false
+   },
+   {
+    "h": 7,
+    "v": 10,
+    "pct": 48,
+    "now": false
+   },
+   {
+    "h": 8,
+    "v": 19,
+    "pct": 90,
+    "now": false
+   },
+   {
+    "h": 9,
+    "v": 17,
+    "pct": 81,
+    "now": false
+   },
+   {
+    "h": 10,
+    "v": 16,
+    "pct": 76,
+    "now": false
+   },
+   {
+    "h": 11,
+    "v": 21,
+    "pct": 100,
+    "now": false
+   },
+   {
+    "h": 12,
+    "v": 10,
+    "pct": 48,
+    "now": false
+   },
+   {
+    "h": 13,
+    "v": 14,
+    "pct": 67,
+    "now": false
+   },
+   {
+    "h": 14,
+    "v": 13,
+    "pct": 62,
+    "now": false
+   },
+   {
+    "h": 15,
+    "v": 15,
+    "pct": 71,
+    "now": false
+   },
+   {
+    "h": 16,
+    "v": 15,
+    "pct": 71,
+    "now": false
+   },
+   {
+    "h": 17,
+    "v": 15,
+    "pct": 71,
+    "now": false
+   },
+   {
+    "h": 18,
+    "v": 12,
+    "pct": 57,
+    "now": false
+   },
+   {
+    "h": 19,
+    "v": 8,
+    "pct": 38,
+    "now": false
+   },
+   {
+    "h": 20,
+    "v": 7,
+    "pct": 33,
+    "now": false
+   },
+   {
+    "h": 21,
+    "v": 14,
+    "pct": 67,
+    "now": false
+   },
+   {
+    "h": 22,
+    "v": 11,
+    "pct": 52,
+    "now": false
+   },
+   {
+    "h": 23,
+    "v": 5,
+    "pct": 24,
+    "now": true
+   }
+  ],
+  "peak_txt": "pic 11 h"
+ },
+ "collection": {
+  "count": 139,
+  "total_types": 168,
+  "pct": 83,
+  "sightings": 3035,
+  "sightings_txt": "3 035",
+  "newest": {
+   "name": "Caravan",
+   "day": "24 oct."
+  },
+  "cards": [
+   {
+    "code": "A320",
+    "name": "A320",
+    "maker": "Airbus",
+    "n": 676,
+    "first_txt": "11 oct.",
+    "last_txt": "24 oct.",
+    "is_new": false,
+    "rare": false,
+    "photo_l": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/A320-l.png",
+    "photo_s": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/A320-s.png",
+    "rank": 1,
+    "share": 22
+   },
+   {
+    "code": "B738",
+    "name": "737-800",
+    "maker": "Boeing",
+    "n": 518,
+    "first_txt": "11 oct.",
+    "last_txt": "24 oct.",
+    "is_new": false,
+    "rare": false,
+    "photo_l": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/B738-l.png",
+    "photo_s": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/B738-s.png",
+    "rank": 2,
+    "share": 17
+   },
+   {
+    "code": "A20N",
+    "name": "A320neo",
+    "maker": "Airbus",
+    "n": 278,
+    "first_txt": "11 oct.",
+    "last_txt": "24 oct.",
+    "is_new": false,
+    "rare": false,
+    "photo_l": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/A20N-l.png",
+    "photo_s": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/A20N-s.png",
+    "rank": 3,
+    "share": 9
+   },
+   {
+    "code": "A21N",
+    "name": "A321neo",
+    "maker": "Airbus",
+    "n": 275,
+    "first_txt": "11 oct.",
+    "last_txt": "24 oct.",
+    "is_new": false,
+    "rare": false,
+    "photo_l": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/A21N-l.png",
+    "photo_s": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/A21N-s.png",
+    "rank": 4,
+    "share": 9
+   },
+   {
+    "code": "B38M",
+    "name": "737 MAX 8",
+    "maker": "Boeing",
+    "n": 243,
+    "first_txt": "11 oct.",
+    "last_txt": "24 oct.",
+    "is_new": false,
+    "rare": false,
+    "photo_l": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/B38M-l.png",
+    "photo_s": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/B38M-s.png",
+    "rank": 5,
+    "share": 8
+   },
+   {
+    "code": "A319",
+    "name": "A319",
+    "maker": "Airbus",
+    "n": 141,
+    "first_txt": "11 oct.",
+    "last_txt": "24 oct.",
+    "is_new": false,
+    "rare": false,
+    "photo_l": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/A319-l.png",
+    "photo_s": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/A319-s.png",
+    "rank": 6,
+    "share": 5
+   },
+   {
+    "code": "A321",
+    "name": "A321",
+    "maker": "Airbus",
+    "n": 137,
+    "first_txt": "11 oct.",
+    "last_txt": "24 oct.",
+    "is_new": false,
+    "rare": false,
+    "photo_l": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/A321-l.png",
+    "photo_s": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/A321-s.png",
+    "rank": 7,
+    "share": 5
+   },
+   {
+    "code": "CRJX",
+    "name": "CRJ1000",
+    "maker": "Bombardier",
+    "n": 96,
+    "first_txt": "11 oct.",
+    "last_txt": "24 oct.",
+    "is_new": false,
+    "rare": false,
+    "photo_l": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/CRJX-l.png",
+    "photo_s": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/CRJX-s.png",
+    "rank": 8,
+    "share": 3
+   },
+   {
+    "code": "BCS3",
+    "name": "A220-300",
+    "maker": "Airbus",
+    "n": 75,
+    "first_txt": "11 oct.",
+    "last_txt": "24 oct.",
+    "is_new": false,
+    "rare": false,
+    "photo_l": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/BCS3-l.png",
+    "photo_s": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/BCS3-s.png",
+    "rank": 9,
+    "share": 2
+   },
+   {
+    "code": "E170",
+    "name": "E170",
+    "maker": "Embraer",
+    "n": 31,
+    "first_txt": "11 oct.",
+    "last_txt": "23 oct.",
+    "is_new": false,
+    "rare": false,
+    "photo_l": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/E170-l.png",
+    "photo_s": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/E170-s.png",
+    "rank": 10,
+    "share": 1
+   },
+   {
+    "code": "E55P",
+    "name": "Phenom 300",
+    "maker": "Embraer",
+    "n": 24,
+    "first_txt": "11 oct.",
+    "last_txt": "24 oct.",
+    "is_new": false,
+    "rare": false,
+    "photo_l": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/E55P-l.png",
+    "photo_s": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/E55P-s.png",
+    "rank": 11,
+    "share": 1
+   },
+   {
+    "code": "B789",
+    "name": "787-9",
+    "maker": "Boeing",
+    "n": 23,
+    "first_txt": "12 oct.",
+    "last_txt": "24 oct.",
+    "is_new": false,
+    "rare": false,
+    "photo_l": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/B789-l.png",
+    "photo_s": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/B789-s.png",
+    "rank": 12,
+    "share": 1
+   },
+   {
+    "code": "E190",
+    "name": "E190",
+    "maker": "Embraer",
+    "n": 20,
+    "first_txt": "11 oct.",
+    "last_txt": "24 oct.",
+    "is_new": false,
+    "rare": false,
+    "photo_l": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/E190-l.png",
+    "photo_s": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/E190-s.png",
+    "rank": 13,
+    "share": 1
+   },
+   {
+    "code": "B748",
+    "name": "747-8",
+    "maker": "Boeing",
+    "n": 19,
+    "first_txt": "12 oct.",
+    "last_txt": "24 oct.",
+    "is_new": false,
+    "rare": true,
+    "photo_l": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/B748-l.png",
+    "photo_s": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/B748-s.png",
+    "rank": 14,
+    "share": 1
+   },
+   {
+    "code": "C56X",
+    "name": "Citation Excel",
+    "maker": "Cessna",
+    "n": 19,
+    "first_txt": "11 oct.",
+    "last_txt": "24 oct.",
+    "is_new": false,
+    "rare": false,
+    "photo_l": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/C56X-l.png",
+    "photo_s": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/C56X-s.png",
+    "rank": 15,
+    "share": 1
+   },
+   {
+    "code": "PC12",
+    "name": "Pilatus PC-12",
+    "maker": "Pilatus",
+    "n": 18,
+    "first_txt": "12 oct.",
+    "last_txt": "23 oct.",
+    "is_new": false,
+    "rare": false,
+    "photo_l": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/PC12-l.png",
+    "photo_s": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/PC12-s.png",
+    "rank": 16,
+    "share": 1
+   },
+   {
+    "code": "A359",
+    "name": "A350-900",
+    "maker": "Airbus",
+    "n": 14,
+    "first_txt": "12 oct.",
+    "last_txt": "24 oct.",
+    "is_new": false,
+    "rare": false,
+    "photo_l": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/A359-l.png",
+    "photo_s": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/A359-s.png",
+    "rank": 17,
+    "share": 1
+   },
+   {
+    "code": "B763",
+    "name": "767-300",
+    "maker": "Boeing",
+    "n": 12,
+    "first_txt": "12 oct.",
+    "last_txt": "23 oct.",
+    "is_new": false,
+    "rare": false,
+    "photo_l": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/B763-l.png",
+    "photo_s": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/B763-s.png",
+    "rank": 18,
+    "share": 1
+   },
+   {
+    "code": "B77W",
+    "name": "777-300ER",
+    "maker": "Boeing",
+    "n": 12,
+    "first_txt": "12 oct.",
+    "last_txt": "24 oct.",
+    "is_new": false,
+    "rare": false,
+    "photo_l": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/B77W-l.png",
+    "photo_s": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/B77W-s.png",
+    "rank": 19,
+    "share": 1
+   },
+   {
+    "code": "AT45",
+    "name": "ATR 42-500",
+    "maker": "ATR",
+    "n": 11,
+    "first_txt": "11 oct.",
+    "last_txt": "24 oct.",
+    "is_new": false,
+    "rare": false,
+    "photo_l": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/AT45-l.png",
+    "photo_s": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/AT45-s.png",
+    "rank": 20,
+    "share": 1
+   },
+   {
+    "code": "E295",
+    "name": "E195-E2",
+    "maker": "Embraer",
+    "n": 11,
+    "first_txt": "13 oct.",
+    "last_txt": "23 oct.",
+    "is_new": false,
+    "rare": false,
+    "photo_l": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/E295-l.png",
+    "photo_s": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/E295-s.png",
+    "rank": 21,
+    "share": 1
+   },
+   {
+    "code": "DR40",
+    "name": "Robin DR400",
+    "maker": "Robin",
+    "n": 11,
+    "first_txt": "11 oct.",
+    "last_txt": "22 oct.",
+    "is_new": false,
+    "rare": false,
+    "photo_l": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/DR40-l.png",
+    "photo_s": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/DR40-s.png",
+    "rank": 22,
+    "share": 1
+   },
+   {
+    "code": "B739",
+    "name": "737-900",
+    "maker": "Boeing",
+    "n": 10,
+    "first_txt": "12 oct.",
+    "last_txt": "24 oct.",
+    "is_new": false,
+    "rare": false,
+    "photo_l": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/B739-l.png",
+    "photo_s": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/B739-s.png",
+    "rank": 23,
+    "share": 1
+   },
+   {
+    "code": "B77L",
+    "name": "777-200LR",
+    "maker": "Boeing",
+    "n": 10,
+    "first_txt": "11 oct.",
+    "last_txt": "23 oct.",
+    "is_new": false,
+    "rare": false,
+    "photo_l": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/B77L-l.png",
+    "photo_s": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/B77L-s.png",
+    "rank": 24,
+    "share": 1
+   },
+   {
+    "code": "APM2",
+    "name": "APM2",
+    "maker": "",
+    "n": 10,
+    "first_txt": "13 oct.",
+    "last_txt": "24 oct.",
+    "is_new": false,
+    "rare": false,
+    "photo_l": "",
+    "photo_s": "",
+    "rank": 25,
+    "share": 1
+   },
+   {
+    "code": "TBM7",
+    "name": "TBM 700",
+    "maker": "Daher",
+    "n": 10,
+    "first_txt": "12 oct.",
+    "last_txt": "21 oct.",
+    "is_new": false,
+    "rare": false,
+    "photo_l": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/TBM7-l.png",
+    "photo_s": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/TBM7-s.png",
+    "rank": 26,
+    "share": 1
+   },
+   {
+    "code": "A306",
+    "name": "A306",
+    "maker": "Airbus",
+    "n": 9,
+    "first_txt": "13 oct.",
+    "last_txt": "23 oct.",
+    "is_new": false,
+    "rare": false,
+    "photo_l": "",
+    "photo_s": "",
+    "rank": 27,
+    "share": 1
+   },
+   {
+    "code": "A400",
+    "name": "A400M",
+    "maker": "Airbus",
+    "n": 9,
+    "first_txt": "12 oct.",
+    "last_txt": "22 oct.",
+    "is_new": false,
+    "rare": true,
+    "photo_l": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/A400-l.png",
+    "photo_s": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/A400-s.png",
+    "rank": 28,
+    "share": 1
+   },
+   {
+    "code": "AN12",
+    "name": "AN12",
+    "maker": "",
+    "n": 9,
+    "first_txt": "12 oct.",
+    "last_txt": "22 oct.",
+    "is_new": false,
+    "rare": false,
+    "photo_l": "",
+    "photo_s": "",
+    "rank": 29,
+    "share": 1
+   },
+   {
+    "code": "CL60",
+    "name": "Challenger 600",
+    "maker": "Bombardier",
+    "n": 9,
+    "first_txt": "11 oct.",
+    "last_txt": "21 oct.",
+    "is_new": false,
+    "rare": false,
+    "photo_l": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/CL60-l.png",
+    "photo_s": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/CL60-s.png",
+    "rank": 30,
+    "share": 1
+   },
+   {
+    "code": "C68A",
+    "name": "Citation Latitude",
+    "maker": "Cessna",
+    "n": 9,
+    "first_txt": "12 oct.",
+    "last_txt": "24 oct.",
+    "is_new": false,
+    "rare": false,
+    "photo_l": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/C68A-l.png",
+    "photo_s": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/C68A-s.png",
+    "rank": 31,
+    "share": 1
+   },
+   {
+    "code": "GLEX",
+    "name": "Global Express",
+    "maker": "Bombardier",
+    "n": 9,
+    "first_txt": "12 oct.",
+    "last_txt": "23 oct.",
+    "is_new": false,
+    "rare": false,
+    "photo_l": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/GLEX-l.png",
+    "photo_s": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/GLEX-s.png",
+    "rank": 32,
+    "share": 1
+   },
+   {
+    "code": "PIVI",
+    "name": "PIVI",
+    "maker": "",
+    "n": 9,
+    "first_txt": "12 oct.",
+    "last_txt": "22 oct.",
+    "is_new": false,
+    "rare": false,
+    "photo_l": "",
+    "photo_s": "",
+    "rank": 33,
+    "share": 1
+   },
+   {
+    "code": "B734",
+    "name": "737-400",
+    "maker": "Boeing",
+    "n": 8,
+    "first_txt": "12 oct.",
+    "last_txt": "24 oct.",
+    "is_new": false,
+    "rare": false,
+    "photo_l": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/B734-l.png",
+    "photo_s": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/B734-s.png",
+    "rank": 34,
+    "share": 1
+   },
+   {
+    "code": "B733",
+    "name": "737-300",
+    "maker": "Boeing",
+    "n": 7,
+    "first_txt": "11 oct.",
+    "last_txt": "24 oct.",
+    "is_new": false,
+    "rare": false,
+    "photo_l": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/B733-l.png",
+    "photo_s": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/B733-s.png",
+    "rank": 35,
+    "share": 1
+   },
+   {
+    "code": "B190",
+    "name": "B190",
+    "maker": "Boeing",
+    "n": 7,
+    "first_txt": "13 oct.",
+    "last_txt": "20 oct.",
+    "is_new": false,
+    "rare": false,
+    "photo_l": "",
+    "photo_s": "",
+    "rank": 36,
+    "share": 1
+   },
+   {
+    "code": "C172",
+    "name": "Cessna 172",
+    "maker": "Cessna",
+    "n": 7,
+    "first_txt": "13 oct.",
+    "last_txt": "24 oct.",
+    "is_new": false,
+    "rare": false,
+    "photo_l": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/C172-l.png",
+    "photo_s": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/C172-s.png",
+    "rank": 37,
+    "share": 1
+   },
+   {
+    "code": "PC24",
+    "name": "Pilatus PC-24",
+    "maker": "Pilatus",
+    "n": 7,
+    "first_txt": "11 oct.",
+    "last_txt": "23 oct.",
+    "is_new": false,
+    "rare": false,
+    "photo_l": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/PC24-l.png",
+    "photo_s": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/PC24-s.png",
+    "rank": 38,
+    "share": 1
+   },
+   {
+    "code": "SIRA",
+    "name": "Siren",
+    "maker": "",
+    "n": 7,
+    "first_txt": "13 oct.",
+    "last_txt": "24 oct.",
+    "is_new": false,
+    "rare": false,
+    "photo_l": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/SIRA-l.png",
+    "photo_s": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/SIRA-s.png",
+    "rank": 39,
+    "share": 1
+   },
+   {
+    "code": "AT76",
+    "name": "ATR 72-600",
+    "maker": "ATR",
+    "n": 6,
+    "first_txt": "19 oct.",
+    "last_txt": "23 oct.",
+    "is_new": false,
+    "rare": false,
+    "photo_l": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/AT76-l.png",
+    "photo_s": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/AT76-s.png",
+    "rank": 40,
+    "share": 1
+   },
+   {
+    "code": "A337",
+    "name": "BelugaXL",
+    "maker": "Airbus",
+    "n": 6,
+    "first_txt": "13 oct.",
+    "last_txt": "21 oct.",
+    "is_new": false,
+    "rare": true,
+    "photo_l": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/A337-l.png",
+    "photo_s": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/A337-s.png",
+    "rank": 41,
+    "share": 1
+   },
+   {
+    "code": "CL35",
+    "name": "Challenger 350",
+    "maker": "Bombardier",
+    "n": 6,
+    "first_txt": "12 oct.",
+    "last_txt": "24 oct.",
+    "is_new": false,
+    "rare": false,
+    "photo_l": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/CL35-l.png",
+    "photo_s": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/CL35-s.png",
+    "rank": 42,
+    "share": 1
+   },
+   {
+    "code": "C25A",
+    "name": "Citation CJ2",
+    "maker": "Cessna",
+    "n": 6,
+    "first_txt": "14 oct.",
+    "last_txt": "21 oct.",
+    "is_new": false,
+    "rare": false,
+    "photo_l": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/C25A-l.png",
+    "photo_s": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/C25A-s.png",
+    "rank": 43,
+    "share": 1
+   },
+   {
+    "code": "E195",
+    "name": "E195",
+    "maker": "Embraer",
+    "n": 6,
+    "first_txt": "15 oct.",
+    "last_txt": "23 oct.",
+    "is_new": false,
+    "rare": false,
+    "photo_l": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/E195-l.png",
+    "photo_s": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/E195-s.png",
+    "rank": 44,
+    "share": 1
+   },
+   {
+    "code": "BE20",
+    "name": "King Air 200",
+    "maker": "Beechcraft",
+    "n": 6,
+    "first_txt": "12 oct.",
+    "last_txt": "22 oct.",
+    "is_new": false,
+    "rare": false,
+    "photo_l": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/BE20-l.png",
+    "photo_s": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/BE20-s.png",
+    "rank": 45,
+    "share": 1
+   },
+   {
+    "code": "P180",
+    "name": "P180",
+    "maker": "",
+    "n": 6,
+    "first_txt": "12 oct.",
+    "last_txt": "24 oct.",
+    "is_new": false,
+    "rare": false,
+    "photo_l": "",
+    "photo_s": "",
+    "rank": 46,
+    "share": 1
+   },
+   {
+    "code": "TB20",
+    "name": "TB20",
+    "maker": "",
+    "n": 6,
+    "first_txt": "15 oct.",
+    "last_txt": "23 oct.",
+    "is_new": false,
+    "rare": false,
+    "photo_l": "",
+    "photo_s": "",
+    "rank": 47,
+    "share": 1
+   },
+   {
+    "code": "A35K",
+    "name": "A350-1000",
+    "maker": "Airbus",
+    "n": 5,
+    "first_txt": "12 oct.",
+    "last_txt": "16 oct.",
+    "is_new": false,
+    "rare": false,
+    "photo_l": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/A35K-l.png",
+    "photo_s": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/A35K-s.png",
+    "rank": 48,
+    "share": 1
+   },
+   {
+    "code": "F900",
+    "name": "Falcon 900",
+    "maker": "Dassault",
+    "n": 5,
+    "first_txt": "13 oct.",
+    "last_txt": "20 oct.",
+    "is_new": false,
+    "rare": false,
+    "photo_l": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/F900-l.png",
+    "photo_s": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/F900-s.png",
+    "rank": 49,
+    "share": 1
+   },
+   {
+    "code": "TBM9",
+    "name": "TBM 900",
+    "maker": "Daher",
+    "n": 5,
+    "first_txt": "12 oct.",
+    "last_txt": "20 oct.",
+    "is_new": false,
+    "rare": false,
+    "photo_l": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/TBM9-l.png",
+    "photo_s": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/TBM9-s.png",
+    "rank": 50,
+    "share": 1
+   },
+   {
+    "code": "B772",
+    "name": "777-200",
+    "maker": "Boeing",
+    "n": 4,
+    "first_txt": "12 oct.",
+    "last_txt": "24 oct.",
+    "is_new": false,
+    "rare": false,
+    "photo_l": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/B772-l.png",
+    "photo_s": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/B772-s.png",
+    "rank": 51,
+    "share": 1
+   },
+   {
+    "code": "A332",
+    "name": "A330-200",
+    "maker": "Airbus",
+    "n": 4,
+    "first_txt": "12 oct.",
+    "last_txt": "21 oct.",
+    "is_new": false,
+    "rare": false,
+    "photo_l": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/A332-l.png",
+    "photo_s": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/A332-s.png",
+    "rank": 52,
+    "share": 1
+   },
+   {
+    "code": "G120",
+    "name": "G120",
+    "maker": "",
+    "n": 4,
+    "first_txt": "21 oct.",
+    "last_txt": "22 oct.",
+    "is_new": false,
+    "rare": false,
+    "photo_l": "",
+    "photo_s": "",
+    "rank": 53,
+    "share": 1
+   },
+   {
+    "code": "EC35",
+    "name": "H135",
+    "maker": "Airbus Helicopters",
+    "n": 4,
+    "first_txt": "12 oct.",
+    "last_txt": "24 oct.",
+    "is_new": false,
+    "rare": false,
+    "photo_l": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/EC35-l.png",
+    "photo_s": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/EC35-s.png",
+    "rank": 54,
+    "share": 1
+   },
+   {
+    "code": "LJ45",
+    "name": "Learjet 45",
+    "maker": "Learjet",
+    "n": 4,
+    "first_txt": "14 oct.",
+    "last_txt": "24 oct.",
+    "is_new": false,
+    "rare": false,
+    "photo_l": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/LJ45-l.png",
+    "photo_s": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/LJ45-s.png",
+    "rank": 55,
+    "share": 1
+   },
+   {
+    "code": "P28A",
+    "name": "Piper Cherokee",
+    "maker": "Piper",
+    "n": 4,
+    "first_txt": "12 oct.",
+    "last_txt": "22 oct.",
+    "is_new": false,
+    "rare": false,
+    "photo_l": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/P28A-l.png",
+    "photo_s": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/P28A-s.png",
+    "rank": 56,
+    "share": 1
+   },
+   {
+    "code": "B752",
+    "name": "757-200",
+    "maker": "Boeing",
+    "n": 3,
+    "first_txt": "12 oct.",
+    "last_txt": "21 oct.",
+    "is_new": false,
+    "rare": false,
+    "photo_l": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/B752-l.png",
+    "photo_s": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/B752-s.png",
+    "rank": 57,
+    "share": 1
+   },
+   {
+    "code": "B788",
+    "name": "787-8",
+    "maker": "Boeing",
+    "n": 3,
+    "first_txt": "11 oct.",
+    "last_txt": "21 oct.",
+    "is_new": false,
+    "rare": false,
+    "photo_l": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/B788-l.png",
+    "photo_s": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/B788-s.png",
+    "rank": 58,
+    "share": 1
+   },
+   {
+    "code": "A333",
+    "name": "A330-300",
+    "maker": "Airbus",
+    "n": 3,
+    "first_txt": "20 oct.",
+    "last_txt": "21 oct.",
+    "is_new": false,
+    "rare": false,
+    "photo_l": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/A333-l.png",
+    "photo_s": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/A333-s.png",
+    "rank": 59,
+    "share": 1
+   },
+   {
+    "code": "A339",
+    "name": "A330-900",
+    "maker": "Airbus",
+    "n": 3,
+    "first_txt": "12 oct.",
+    "last_txt": "20 oct.",
+    "is_new": false,
+    "rare": false,
+    "photo_l": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/A339-l.png",
+    "photo_s": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/photos/A339-s.png",
+    "rank": 60,
+    "share": 1
+   }
+  ]
+ },
+ "stats": {
+  "total": 3213,
+  "total_txt": "3 213",
+  "days": 14,
+  "avg_txt": "229,5",
+  "best_day_n": 274,
+  "best_day_txt": "16 oct.",
+  "streak": 14,
+  "unique": 1692,
+  "unique_txt": "1 692",
+  "regulars": 690,
+  "regular": {
+   "id": "F-GPYM",
+   "n": 11,
+   "sub": "ATR 42-500 · Chalair Aviation"
+  },
+  "busiest_txt": "vendredi vers 11 h",
+  "best_dow_txt": "vendredi",
+  "records": [
+   {
+    "k": "Le plus haut",
+    "v": "14 928 m",
+    "sub": "Gulfstream V · Baires Fly",
+    "day": "14 oct."
+   },
+   {
+    "k": "Le plus rapide",
+    "v": "1 108 km/h",
+    "sub": "747-8 · Lufthansa",
+    "day": "23 oct."
+   },
+   {
+    "k": "Le plus proche",
+    "v": "700 m",
+    "sub": "A321neo · City Airlines à 11 582 m",
+    "day": "13 oct."
+   },
+   {
+    "k": "Le plus long trajet",
+    "v": "11 503 km",
+    "sub": "Buenos Aires (Ezeiza) → Frankfurt",
+    "day": "14 oct."
+   }
+  ],
+  "top_airlines": [
+   {
+    "name": "Ryanair",
+    "n": 365,
+    "pct": 100,
+    "logo": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/logos/FR.png"
+   },
+   {
+    "name": "easyJet Europe",
+    "n": 302,
+    "pct": 83,
+    "logo": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/logos/EC.png"
+   },
+   {
+    "name": "Lufthansa",
+    "n": 198,
+    "pct": 54,
+    "logo": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/logos/LH.png"
+   },
+   {
+    "name": "Swiss International Air Lines",
+    "n": 154,
+    "pct": 42,
+    "logo": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/logos/LX.png"
+   },
+   {
+    "name": "TAP Portugal",
+    "n": 134,
+    "pct": 37,
+    "logo": "https://raw.githubusercontent.com/nbbou81000/trmnl-radar-ciel/data/logos/TP.png"
+   }
+  ],
+  "top_types": [
+   {
+    "name": "A320",
+    "code": "A320",
+    "n": 676,
+    "pct": 100
+   },
+   {
+    "name": "737-800",
+    "code": "B738",
+    "n": 518,
+    "pct": 77
+   },
+   {
+    "name": "A320neo",
+    "code": "A20N",
+    "n": 278,
+    "pct": 41
+   },
+   {
+    "name": "A321neo",
+    "code": "A21N",
+    "n": 275,
+    "pct": 41
+   },
+   {
+    "name": "737 MAX 8",
+    "code": "B38M",
+    "n": 243,
+    "pct": 36
+   }
+  ],
+  "top_dest": [
+   {
+    "name": "Geneva",
+    "n": 274,
+    "pct": 100
+   },
+   {
+    "name": "Zurich",
+    "n": 249,
+    "pct": 91
+   },
+   {
+    "name": "Milan",
+    "n": 230,
+    "pct": 84
+   },
+   {
+    "name": "Lyon",
+    "n": 195,
+    "pct": 71
+   },
+   {
+    "name": "Munich",
+    "n": 175,
+    "pct": 64
+   }
+  ],
+  "heat": [
+   {
+    "d": "lun.",
+    "cells": [
+     {
+      "h": 0,
+      "v": 8,
+      "l": 1
+     },
+     {
+      "h": 1,
+      "v": 3,
+      "l": 1
+     },
+     {
+      "h": 2,
+      "v": 3,
+      "l": 1
+     },
+     {
+      "h": 3,
+      "v": 1,
+      "l": 1
+     },
+     {
+      "h": 4,
+      "v": 0,
+      "l": 0
+     },
+     {
+      "h": 5,
+      "v": 2,
+      "l": 1
+     },
+     {
+      "h": 6,
+      "v": 8,
+      "l": 1
+     },
+     {
+      "h": 7,
+      "v": 13,
+      "l": 1
+     },
+     {
+      "h": 8,
+      "v": 37,
+      "l": 3
+     },
+     {
+      "h": 9,
+      "v": 27,
+      "l": 2
+     },
+     {
+      "h": 10,
+      "v": 35,
+      "l": 3
+     },
+     {
+      "h": 11,
+      "v": 50,
+      "l": 4
+     },
+     {
+      "h": 12,
+      "v": 21,
+      "l": 2
+     },
+     {
+      "h": 13,
+      "v": 34,
+      "l": 3
+     },
+     {
+      "h": 14,
+      "v": 27,
+      "l": 2
+     },
+     {
+      "h": 15,
+      "v": 22,
+      "l": 2
+     },
+     {
+      "h": 16,
+      "v": 39,
+      "l": 3
+     },
+     {
+      "h": 17,
+      "v": 27,
+      "l": 2
+     },
+     {
+      "h": 18,
+      "v": 27,
+      "l": 2
+     },
+     {
+      "h": 19,
+      "v": 22,
+      "l": 2
+     },
+     {
+      "h": 20,
+      "v": 22,
+      "l": 2
+     },
+     {
+      "h": 21,
+      "v": 34,
+      "l": 3
+     },
+     {
+      "h": 22,
+      "v": 31,
+      "l": 3
+     },
+     {
+      "h": 23,
+      "v": 19,
+      "l": 2
+     }
+    ]
+   },
+   {
+    "d": "mar.",
+    "cells": [
+     {
+      "h": 0,
+      "v": 6,
+      "l": 1
+     },
+     {
+      "h": 1,
+      "v": 2,
+      "l": 1
+     },
+     {
+      "h": 2,
+      "v": 1,
+      "l": 1
+     },
+     {
+      "h": 3,
+      "v": 4,
+      "l": 1
+     },
+     {
+      "h": 4,
+      "v": 2,
+      "l": 1
+     },
+     {
+      "h": 5,
+      "v": 3,
+      "l": 1
+     },
+     {
+      "h": 6,
+      "v": 6,
+      "l": 1
+     },
+     {
+      "h": 7,
+      "v": 16,
+      "l": 2
+     },
+     {
+      "h": 8,
+      "v": 38,
+      "l": 3
+     },
+     {
+      "h": 9,
+      "v": 24,
+      "l": 2
+     },
+     {
+      "h": 10,
+      "v": 21,
+      "l": 2
+     },
+     {
+      "h": 11,
+      "v": 28,
+      "l": 3
+     },
+     {
+      "h": 12,
+      "v": 26,
+      "l": 2
+     },
+     {
+      "h": 13,
+      "v": 28,
+      "l": 3
+     },
+     {
+      "h": 14,
+      "v": 38,
+      "l": 3
+     },
+     {
+      "h": 15,
+      "v": 26,
+      "l": 2
+     },
+     {
+      "h": 16,
+      "v": 27,
+      "l": 2
+     },
+     {
+      "h": 17,
+      "v": 31,
+      "l": 3
+     },
+     {
+      "h": 18,
+      "v": 26,
+      "l": 2
+     },
+     {
+      "h": 19,
+      "v": 25,
+      "l": 2
+     },
+     {
+      "h": 20,
+      "v": 17,
+      "l": 2
+     },
+     {
+      "h": 21,
+      "v": 38,
+      "l": 3
+     },
+     {
+      "h": 22,
+      "v": 22,
+      "l": 2
+     },
+     {
+      "h": 23,
+      "v": 12,
+      "l": 1
+     }
+    ]
+   },
+   {
+    "d": "mer.",
+    "cells": [
+     {
+      "h": 0,
+      "v": 3,
+      "l": 1
+     },
+     {
+      "h": 1,
+      "v": 2,
+      "l": 1
+     },
+     {
+      "h": 2,
+      "v": 1,
+      "l": 1
+     },
+     {
+      "h": 3,
+      "v": 2,
+      "l": 1
+     },
+     {
+      "h": 4,
+      "v": 1,
+      "l": 1
+     },
+     {
+      "h": 5,
+      "v": 1,
+      "l": 1
+     },
+     {
+      "h": 6,
+      "v": 6,
+      "l": 1
+     },
+     {
+      "h": 7,
+      "v": 19,
+      "l": 2
+     },
+     {
+      "h": 8,
+      "v": 38,
+      "l": 3
+     },
+     {
+      "h": 9,
+      "v": 29,
+      "l": 3
+     },
+     {
+      "h": 10,
+      "v": 29,
+      "l": 3
+     },
+     {
+      "h": 11,
+      "v": 42,
+      "l": 4
+     },
+     {
+      "h": 12,
+      "v": 20,
+      "l": 2
+     },
+     {
+      "h": 13,
+      "v": 24,
+      "l": 2
+     },
+     {
+      "h": 14,
+      "v": 36,
+      "l": 3
+     },
+     {
+      "h": 15,
+      "v": 25,
+      "l": 2
+     },
+     {
+      "h": 16,
+      "v": 30,
+      "l": 3
+     },
+     {
+      "h": 17,
+      "v": 26,
+      "l": 2
+     },
+     {
+      "h": 18,
+      "v": 42,
+      "l": 4
+     },
+     {
+      "h": 19,
+      "v": 13,
+      "l": 1
+     },
+     {
+      "h": 20,
+      "v": 23,
+      "l": 2
+     },
+     {
+      "h": 21,
+      "v": 25,
+      "l": 2
+     },
+     {
+      "h": 22,
+      "v": 25,
+      "l": 2
+     },
+     {
+      "h": 23,
+      "v": 11,
+      "l": 1
+     }
+    ]
+   },
+   {
+    "d": "jeu.",
+    "cells": [
+     {
+      "h": 0,
+      "v": 5,
+      "l": 1
+     },
+     {
+      "h": 1,
+      "v": 1,
+      "l": 1
+     },
+     {
+      "h": 2,
+      "v": 1,
+      "l": 1
+     },
+     {
+      "h": 3,
+      "v": 0,
+      "l": 0
+     },
+     {
+      "h": 4,
+      "v": 1,
+      "l": 1
+     },
+     {
+      "h": 5,
+      "v": 1,
+      "l": 1
+     },
+     {
+      "h": 6,
+      "v": 8,
+      "l": 1
+     },
+     {
+      "h": 7,
+      "v": 16,
+      "l": 2
+     },
+     {
+      "h": 8,
+      "v": 27,
+      "l": 2
+     },
+     {
+      "h": 9,
+      "v": 36,
+      "l": 3
+     },
+     {
+      "h": 10,
+      "v": 36,
+      "l": 3
+     },
+     {
+      "h": 11,
+      "v": 30,
+      "l": 3
+     },
+     {
+      "h": 12,
+      "v": 30,
+      "l": 3
+     },
+     {
+      "h": 13,
+      "v": 25,
+      "l": 2
+     },
+     {
+      "h": 14,
+      "v": 32,
+      "l": 3
+     },
+     {
+      "h": 15,
+      "v": 27,
+      "l": 2
+     },
+     {
+      "h": 16,
+      "v": 27,
+      "l": 2
+     },
+     {
+      "h": 17,
+      "v": 37,
+      "l": 3
+     },
+     {
+      "h": 18,
+      "v": 35,
+      "l": 3
+     },
+     {
+      "h": 19,
+      "v": 24,
+      "l": 2
+     },
+     {
+      "h": 20,
+      "v": 21,
+      "l": 2
+     },
+     {
+      "h": 21,
+      "v": 40,
+      "l": 3
+     },
+     {
+      "h": 22,
+      "v": 15,
+      "l": 2
+     },
+     {
+      "h": 23,
+      "v": 16,
+      "l": 2
+     }
+    ]
+   },
+   {
+    "d": "ven.",
+    "cells": [
+     {
+      "h": 0,
+      "v": 9,
+      "l": 1
+     },
+     {
+      "h": 1,
+      "v": 2,
+      "l": 1
+     },
+     {
+      "h": 2,
+      "v": 4,
+      "l": 1
+     },
+     {
+      "h": 3,
+      "v": 0,
+      "l": 0
+     },
+     {
+      "h": 4,
+      "v": 1,
+      "l": 1
+     },
+     {
+      "h": 5,
+      "v": 0,
+      "l": 0
+     },
+     {
+      "h": 6,
+      "v": 6,
+      "l": 1
+     },
+     {
+      "h": 7,
+      "v": 17,
+      "l": 2
+     },
+     {
+      "h": 8,
+      "v": 32,
+      "l": 3
+     },
+     {
+      "h": 9,
+      "v": 41,
+      "l": 4
+     },
+     {
+      "h": 10,
+      "v": 27,
+      "l": 2
+     },
+     {
+      "h": 11,
+      "v": 54,
+      "l": 4
+     },
+     {
+      "h": 12,
+      "v": 28,
+      "l": 3
+     },
+     {
+      "h": 13,
+      "v": 24,
+      "l": 2
+     },
+     {
+      "h": 14,
+      "v": 31,
+      "l": 3
+     },
+     {
+      "h": 15,
+      "v": 24,
+      "l": 2
+     },
+     {
+      "h": 16,
+      "v": 40,
+      "l": 3
+     },
+     {
+      "h": 17,
+      "v": 28,
+      "l": 3
+     },
+     {
+      "h": 18,
+      "v": 37,
+      "l": 3
+     },
+     {
+      "h": 19,
+      "v": 23,
+      "l": 2
+     },
+     {
+      "h": 20,
+      "v": 19,
+      "l": 2
+     },
+     {
+      "h": 21,
+      "v": 35,
+      "l": 3
+     },
+     {
+      "h": 22,
+      "v": 19,
+      "l": 2
+     },
+     {
+      "h": 23,
+      "v": 18,
+      "l": 2
+     }
+    ]
+   },
+   {
+    "d": "sam.",
+    "cells": [
+     {
+      "h": 0,
+      "v": 7,
+      "l": 1
+     },
+     {
+      "h": 1,
+      "v": 4,
+      "l": 1
+     },
+     {
+      "h": 2,
+      "v": 3,
+      "l": 1
+     },
+     {
+      "h": 3,
+      "v": 1,
+      "l": 1
+     },
+     {
+      "h": 4,
+      "v": 1,
+      "l": 1
+     },
+     {
+      "h": 5,
+      "v": 1,
+      "l": 1
+     },
+     {
+      "h": 6,
+      "v": 8,
+      "l": 1
+     },
+     {
+      "h": 7,
+      "v": 14,
+      "l": 2
+     },
+     {
+      "h": 8,
+      "v": 38,
+      "l": 3
+     },
+     {
+      "h": 9,
+      "v": 30,
+      "l": 3
+     },
+     {
+      "h": 10,
+      "v": 36,
+      "l": 3
+     },
+     {
+      "h": 11,
+      "v": 34,
+      "l": 3
+     },
+     {
+      "h": 12,
+      "v": 19,
+      "l": 2
+     },
+     {
+      "h": 13,
+      "v": 23,
+      "l": 2
+     },
+     {
+      "h": 14,
+      "v": 38,
+      "l": 3
+     },
+     {
+      "h": 15,
+      "v": 25,
+      "l": 2
+     },
+     {
+      "h": 16,
+      "v": 21,
+      "l": 2
+     },
+     {
+      "h": 17,
+      "v": 23,
+      "l": 2
+     },
+     {
+      "h": 18,
+      "v": 22,
+      "l": 2
+     },
+     {
+      "h": 19,
+      "v": 13,
+      "l": 1
+     },
+     {
+      "h": 20,
+      "v": 11,
+      "l": 1
+     },
+     {
+      "h": 21,
+      "v": 19,
+      "l": 2
+     },
+     {
+      "h": 22,
+      "v": 14,
+      "l": 2
+     },
+     {
+      "h": 23,
+      "v": 6,
+      "l": 1
+     }
+    ]
+   },
+   {
+    "d": "dim.",
+    "cells": [
+     {
+      "h": 0,
+      "v": 5,
+      "l": 1
+     },
+     {
+      "h": 1,
+      "v": 1,
+      "l": 1
+     },
+     {
+      "h": 2,
+      "v": 3,
+      "l": 1
+     },
+     {
+      "h": 3,
+      "v": 3,
+      "l": 1
+     },
+     {
+      "h": 4,
+      "v": 2,
+      "l": 1
+     },
+     {
+      "h": 5,
+      "v": 0,
+      "l": 0
+     },
+     {
+      "h": 6,
+      "v": 1,
+      "l": 1
+     },
+     {
+      "h": 7,
+      "v": 6,
+      "l": 1
+     },
+     {
+      "h": 8,
+      "v": 20,
+      "l": 2
+     },
+     {
+      "h": 9,
+      "v": 11,
+      "l": 1
+     },
+     {
+      "h": 10,
+      "v": 9,
+      "l": 1
+     },
+     {
+      "h": 11,
+      "v": 14,
+      "l": 2
+     },
+     {
+      "h": 12,
+      "v": 15,
+      "l": 2
+     },
+     {
+      "h": 13,
+      "v": 0,
+      "l": 0
+     },
+     {
+      "h": 14,
+      "v": 11,
+      "l": 1
+     },
+     {
+      "h": 15,
+      "v": 16,
+      "l": 2
+     },
+     {
+      "h": 16,
+      "v": 21,
+      "l": 2
+     },
+     {
+      "h": 17,
+      "v": 40,
+      "l": 3
+     },
+     {
+      "h": 18,
+      "v": 35,
+      "l": 3
+     },
+     {
+      "h": 19,
+      "v": 23,
+      "l": 2
+     },
+     {
+      "h": 20,
+      "v": 21,
+      "l": 2
+     },
+     {
+      "h": 21,
+      "v": 40,
+      "l": 3
+     },
+     {
+      "h": 22,
+      "v": 25,
+      "l": 2
+     },
+     {
+      "h": 23,
+      "v": 18,
+      "l": 2
+     }
+    ]
+   }
+  ],
+  "heat_hours": [
+   0,
+   6,
+   12,
+   18
+  ],
+  "dow": [
+   {
+    "d": "lun.",
+    "n": 512,
+    "pct": 99
+   },
+   {
+    "d": "mar.",
+    "n": 467,
+    "pct": 90
+   },
+   {
+    "d": "mer.",
+    "n": 473,
+    "pct": 91
+   },
+   {
+    "d": "jeu.",
+    "n": 491,
+    "pct": 95
+   },
+   {
+    "d": "ven.",
+    "n": 519,
+    "pct": 100
+   },
+   {
+    "d": "sam.",
+    "n": 411,
+    "pct": 79
+   },
+   {
+    "d": "dim.",
+    "n": 340,
+    "pct": 66
+   }
+  ],
+  "since_txt": "11 oct.",
+  "rose": [
+   {
+    "dir": "N",
+    "v": 80,
+    "pct": 3,
+    "path": "M70,70 L66.9,60.5 A10,10 0 0,1 73.1,60.5 Z"
+   },
+   {
+    "dir": "NE",
+    "v": 2309,
+    "pct": 75,
+    "path": "M70,70 L97.2,16.5 A60,60 0 0,1 123.5,42.8 Z"
+   },
+   {
+    "dir": "E",
+    "v": 132,
+    "pct": 4,
+    "path": "M70,70 L80.5,66.6 A11,11 0 0,1 80.5,73.4 Z"
+   },
+   {
+    "dir": "SE",
+    "v": 76,
+    "pct": 2,
+    "path": "M70,70 L78.9,74.5 A10,10 0 0,1 74.5,78.9 Z"
+   },
+   {
+    "dir": "S",
+    "v": 257,
+    "pct": 8,
+    "path": "M70,70 L74.3,83.3 A14,14 0 0,1 65.7,83.3 Z"
+   },
+   {
+    "dir": "SO",
+    "v": 87,
+    "pct": 3,
+    "path": "M70,70 L65.5,78.9 A10,10 0 0,1 61.1,74.5 Z"
+   },
+   {
+    "dir": "O",
+    "v": 34,
+    "pct": 1,
+    "path": "M70,70 L61.4,72.8 A9,9 0 0,1 61.4,67.2 Z"
+   },
+   {
+    "dir": "NO",
+    "v": 84,
+    "pct": 3,
+    "path": "M70,70 L61.1,65.5 A10,10 0 0,1 65.5,61.1 Z"
+   }
+  ],
+  "rose_top": "75 % filent vers le NE",
+  "alt": [
+   {
+    "label": "< 1,5",
+    "n": 69,
+    "pct": 4,
+    "share": 2
+   },
+   {
+    "label": "1,5 – 4",
+    "n": 59,
+    "pct": 3,
+    "share": 2
+   },
+   {
+    "label": "4 – 8",
+    "n": 281,
+    "pct": 14,
+    "share": 9
+   },
+   {
+    "label": "8 – 10,5",
+    "n": 693,
+    "pct": 35,
+    "share": 23
+   },
+   {
+    "label": "> 10,5",
+    "n": 1960,
+    "pct": 100,
+    "share": 64
+   }
+  ],
+  "fam": [
+   {
+    "k": "ligne",
+    "label": "Moyen-courriers",
+    "n": 2457,
+    "share": 80,
+    "pct": 100
+   },
+   {
+    "k": "gros",
+    "label": "Gros porteurs",
+    "n": 122,
+    "share": 4,
+    "pct": 5
+   },
+   {
+    "k": "regional",
+    "label": "Jets régionaux",
+    "n": 167,
+    "share": 5,
+    "pct": 7
+   },
+   {
+    "k": "turboprop",
+    "label": "Turbopropulseurs",
+    "n": 51,
+    "share": 2,
+    "pct": 2
+   },
+   {
+    "k": "affaires",
+    "label": "Jets d'affaires",
+    "n": 125,
+    "share": 4,
+    "pct": 5
+   },
+   {
+    "k": "leger",
+    "label": "Aviation légère",
+    "n": 41,
+    "share": 1,
+    "pct": 2
+   },
+   {
+    "k": "heli",
+    "label": "Hélicoptères",
+    "n": 4,
+    "share": 0,
+    "pct": 0
+   },
+   {
+    "k": "mil",
+    "label": "Militaires",
+    "n": 38,
+    "share": 1,
+    "pct": 2
+   }
+  ],
+  "collection_txt": "139 modèles · 162 compagnies · 42 pays"
+ },
+ "iss": {
+  "now": null,
+  "next": {
+   "when": "la nuit prochaine",
+   "start_txt": "05:37",
+   "end_txt": "05:40",
+   "max_el": 22,
+   "from_txt": "nord",
+   "to_txt": "nord-est",
+   "txt": "05:37 → 05:40, du nord vers le nord-est, 22° max"
+  },
+  "none_txt": ""
+ },
+ "map_flights_js": "[[2.103,44.0928,55,1]]",
+ "map_circle_js": "[[2.17,44.2578],[2.2028,44.2568],[2.2354,44.2537],[2.2675,44.2486],[2.2988,44.2415],[2.3291,44.2324],[2.3582,44.2215],[2.3859,44.2088],[2.4119,44.1944],[2.436,44.1785],[2.4581,44.1611],[2.478,44.1423],[2.4955,44.1224],[2.5105,44.1015],[2.5229,44.0797],[2.5326,44.0573],[2.5396,44.0343],[2.5437,44.0109],[2.545,43.9874],[2.5434,43.9639],[2.539,43.9406],[2.5318,43.9176],[2.5218,43.8952],[2.5092,43.8735],[2.494,43.8526],[2.4764,43.8328],[2.4564,43.8142],[2.4343,43.7969],[2.4102,43.7811],[2.3843,43.7668],[2.3568,43.7542],[2.3278,43.7434],[2.2977,43.7344],[2.2666,43.7274],[2.2348,43.7223],[2.2025,43.7192],[2.17,43.7182],[2.1375,43.7192],[2.1052,43.7223],[2.0734,43.7274],[2.0423,43.7344],[2.0122,43.7434],[1.9832,43.7542],[1.9557,43.7668],[1.9298,43.7811],[1.9057,43.7969],[1.8836,43.8142],[1.8636,43.8328],[1.846,43.8526],[1.8308,43.8735],[1.8182,43.8952],[1.8082,43.9176],[1.801,43.9406],[1.7966,43.9639],[1.795,43.9874],[1.7963,44.0109],[1.8004,44.0343],[1.8074,44.0573],[1.8171,44.0797],[1.8295,44.1015],[1.8445,44.1224],[1.862,44.1423],[1.8819,44.1611],[1.904,44.1785],[1.9281,44.1944],[1.9541,44.2088],[1.9818,44.2215],[2.0109,44.2324],[2.0412,44.2415],[2.0725,44.2486],[2.1046,44.2537],[2.1372,44.2568],[2.17,44.2578]]"
+}
